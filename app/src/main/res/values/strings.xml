@@ -1,3 +1,23 @@
 <resources>
-    <string name="app_name">Primera clase programacion mobile</string>
+    <string name="app_name">Mis recordatorios</string>
+    <string name="study_space">PROGRAMACIÓN MOBILE</string>
+    <string name="screen_intro">Organizá tu estudio y tus entregas.</string>
+    <string name="sample_data">Datos de ejemplo</string>
+    <string name="summary">Recordatorios: %1$d · Categorías: %2$d</string>
+    <string name="filter_state">Estado</string>
+    <string name="filter_priority">Prioridad</string>
+    <string name="filter_all">Todos</string>
+    <string name="category_study">Estudio</string>
+    <string name="category_deliveries">Entregas</string>
+    <string name="category_exams">Exámenes</string>
+    <string name="priority_high">Alta</string>
+    <string name="priority_medium">Media</string>
+    <string name="priority_low">Baja</string>
+    <string name="priority_label">Prioridad %1$s</string>
+    <string name="state_pending">Pendiente</string>
+    <string name="state_completed">Completado</string>
+    <string name="results_title">Tus recordatorios</string>
+    <string name="results_count">%1$d de %2$d</string>
+    <string name="empty_title">No hay coincidencias</string>
+    <string name="empty_body">Probá otra prioridad o estado para encontrar tus recordatorios.</string>
 </resources>
