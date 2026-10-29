@@ -59,6 +59,6 @@ Durante las pruebas apareció NoSuchMethodException: InputManager.getInstance en
 
 Los datos son simulados. No hay formularios de alta o edición, persistencia, sincronización ni servicios en la nube. El trabajo corresponde a API1.
 
-El repositorio es privado. El ZIP adjunto al PDF incluye el mismo código publicado, los tests y el Gradle Wrapper, para permitir la revisión sin acceso a GitHub. No contiene compilaciones, cachés, local.properties, configuración personal del IDE ni credenciales.
+El repositorio es público. El ZIP adjunto al PDF incluye el mismo código publicado, los tests y el Gradle Wrapper. No contiene compilaciones, cachés, local.properties, configuración personal del IDE ni credenciales.
 
 Fuentes de la actividad: [API1 en Canvas](https://teclab.instructure.com/courses/3864/assignments/42397) y [consigna original](https://teclab.instructure.com/courses/3864/files/1354761?wrap=1).
