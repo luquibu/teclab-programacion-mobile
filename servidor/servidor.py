@@ -30,6 +30,9 @@ class Servicio(BaseHTTPRequestHandler):
     def responder(self, estado, dato=None):
         cuerpo = json.dumps(dato, ensure_ascii=False).encode("utf-8") if dato is not None else b""
         self.send_response(estado)
+        # El servidor cierra cada conexión. OkHttp debe abrir otra para el GET posterior al PUT.
+        self.send_header("Connection", "close")
+        self.close_connection = True
         self.send_header("Content-Type", "application/json; charset=utf-8")
         self.send_header("Content-Length", str(len(cuerpo)))
         self.end_headers()

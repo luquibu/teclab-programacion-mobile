@@ -48,8 +48,9 @@ El emulador accede a la PC en `http://10.0.2.2:8765/`. El archivo `gradle.proper
 
    ```powershell
    .\gradlew.bat assembleDebug testDebugUnitTest lintDebug connectedDebugAndroidTest
+   python -m unittest discover -s servidor
    ```
 
-Las pruebas instrumentadas usan una base aislada y un servidor HTTP controlado. Ejercitan el recorrido de las pantallas, el CRUD, la respuesta perdida después de una escritura, una edición durante el envío, códigos 400 y 503, tiempo de espera agotado y el rechazo de una respuesta inválida.
+La prueba de Python comprueba que el servidor confirma un guardado y devuelve el mismo registro en la consulta siguiente. Las pruebas instrumentadas usan una base aislada y un servidor HTTP controlado. Ejercitan el recorrido de las pantallas, el CRUD, la respuesta perdida después de una escritura, una edición durante el envío, códigos 400 y 503, tiempo de espera agotado y el rechazo de una respuesta inválida.
 
 [Consigna de API3](https://teclab.instructure.com/courses/3864/files/1354757?wrap=1) | [Versión de API2](https://github.com/luquibu/teclab-programacion-mobile/tree/3c429498c31cf4d3b3806a9e4c34498c61e000cc)
