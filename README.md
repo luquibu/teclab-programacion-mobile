@@ -1,64 +1,44 @@
 # Mis recordatorios
 
-Actividad Práctica Integradora 1 de Programación Mobile, Teclab, bimestre 2B/2026.
-Estudiante: Lucas Agustin Aguirre Gonzalez.
+Aplicación de Programación Mobile de Lucas Agustin Aguirre Gonzalez. La actividad 2 permite crear recordatorios académicos, consultar su detalle y filtrar el listado por estado y prioridad. Los seis ejemplos iniciales y las altas se guardan en memoria durante la sesión.
 
-Aplicación Android con seis recordatorios académicos ficticios. Permite combinar filtros por prioridad y estado, volver a Todos y consultar un mensaje cuando no hay coincidencias. Los filtros sobreviven a la recreación de la actividad mediante rememberSaveable.
+## Ejecutar
 
-## Abrir y ejecutar
+Abrir la carpeta que contiene `settings.gradle.kts` en Android Studio. Usar el JBR 25 del IDE para Gradle, instalar Android SDK Platform 37 y ejecutar el módulo `app` en un dispositivo con Android API 24 o posterior. Se probó en Medium Phone, Android 17, imagen API 37.2. La primera sincronización descarga las dependencias y el Gradle Wrapper.
 
-1. Clonar este repositorio o extraer el ZIP adjunto al PDF. Abrir la carpeta que contiene settings.gradle.kts en Android Studio.
-2. Instalar Android SDK Platform 37 y las herramientas que solicite la sincronización. El proyecto usa minSdk 24 y targetSdk 37.
-3. Configurar el JBR de Android Studio como JVM de Gradle. La configuración del proyecto requiere Java 25. Se verificó con JBR 25.0.3.
-4. Dejar que Android Studio cree local.properties con la ruta local del SDK. Ese archivo no se distribuye. Para trabajar por terminal también puede definirse ANDROID_HOME.
-5. Iniciar un emulador o conectar un dispositivo Android. Seleccionar app y pulsar Run. La verificación se hizo en el AVD Medium Phone, Android 17, API 37.2, x86_64.
-
-Primera sincronización: necesita acceso a Google Maven, Maven Central y la distribución de Gradle. El ZIP contiene el Wrapper, pero no copia el SDK ni las cachés de dependencias.
-
-En PowerShell, desde la raíz del proyecto, con JAVA_HOME apuntando al JBR y el emulador encendido:
+En PowerShell, con `JAVA_HOME` apuntando al JBR, `ANDROID_HOME` al SDK y el emulador encendido:
 
 ```powershell
 .\gradlew.bat assembleDebug testDebugUnitTest lintDebug connectedDebugAndroidTest
 ```
 
-En macOS o Linux, usar ./gradlew con las mismas tareas. El APK de depuración se genera en app/build/outputs/apk/debug/app-debug.apk.
+El APK se genera en `app/build/outputs/apk/debug/app-debug.apk`. En Linux y macOS usar `./gradlew`. El proyecto conserva Gradle 9.6.0, AGP 9.4.1, Kotlin 2.2.10, Compose BOM 2026.02.01 y el identificador `com.example.primeraclaseprogramacionmobile`.
 
-Se conservaron Gradle 9.6.0, Android Gradle Plugin 9.4.1, Kotlin 2.2.10 y Compose BOM 2026.02.01. El applicationId continúa siendo com.example.primeraclaseprogramacionmobile. El nombre visible es Mis recordatorios.
+## Pantallas y datos
 
-## Correspondencia con API1
+| Ruta | Argumento | Acciones |
+| --- | --- | --- |
+| `listado` | Ninguno | Combinar filtros, abrir un recordatorio o crear uno. |
+| `crear` | Ninguno | Validar el borrador, guardar o cancelar. |
+| `detalle/{id}` | `id: Long` | Consultar los datos del registro y volver. |
 
-| Requisito | Implementación |
-| --- | --- |
-| Modelos inmutables y alternativas cerradas | model/Recordatorio.kt contiene una data class con propiedades val y sealed classes para categoría, prioridad y estado. |
-| Datos opcionales y validación | Descripción nullable. require exige id positivo y al menos cuatro caracteres de título después de quitar espacios externos para la validación. El título recibido se conserva. copy vuelve a validar. |
-| List, Set y Map | data/DatosRecordatorios.kt conserva seis elementos en List y obtiene categorías únicas con Set. ui/PantallaRecordatorios.kt relaciona cada categoría con etiqueta y color en Map. |
-| Filtrado | filtrarRecordatorios combina prioridad y estado con AND; null significa Todos. Devuelve otra lista y conserva el orden y los datos originales. |
-| Pantalla Compose y Material 3 | Tarjetas con título, categoría, prioridad, estado y descripción cuando existe. Lista desplazable, filtros y estado vacío. |
-| Ejecución Android | Pruebas instrumentadas en Medium Phone y capturas reales documentadas en el PDF. |
+`ui/Navegacion.kt` conecta las acciones de las pantallas con el grafo tipado de Navigation Compose. Guardar, cancelar y volver desde el detalle retiran el destino actual. La entrada del listado conserva sus filtros. Cada pantalla observa el estado inmutable de su ViewModel con `collectAsStateWithLifecycle`. Los ViewModel reciben la interfaz `RepositorioRecordatorios`; la implementación en memoria comparte la colección entre los tres destinos.
 
-Las rutas anteriores parten de app/src/main/java/com/example/primeraclaseprogramacionmobile. Las pruebas de reglas están en app/src/test y las de interfaz en app/src/androidTest.
+`model/Borrador.kt` valida el título recortado, el máximo de 200 caracteres de descripción y la selección de categoría y prioridad. Guardar se habilita al completar los datos válidos. Durante el envío se bloquea un segundo guardado. Un error conserva los campos para reintentar. Los nuevos registros empiezan pendientes.
 
-## Diseño visual
+## Reproducir los estados
 
-Adaptación móvil del sistema de diseño de AxForge solicitado por el estudiante. La paleta oscura se centraliza en ui/theme/Color.kt: fondo #0e0f12, tarjetas #16181d, bordes #2a2e38, texto principal #e7e9ee y secundario #9aa0ad. La selección usa azul #3a72e8 al 15% con borde azul. Completado usa verde #10b981, y las categorías usan colores de identidad desaturados.
+Tras instalar la app, ejecutar en PowerShell con `adb` en el PATH:
 
-La separación depende del fondo y los bordes, sin degradados ni sombras en las tarjetas. Se usan espacios de 4, 6, 8, 12 y 16 dp, radios de 4, 6 y 8 dp, peso semibold para títulos y texto secundario atenuado. La adaptación móvil usa texto escalable de 12 a 20 sp y filtros de al menos 48 dp de alto. No incluye selector de tema ni colores dinámicos del dispositivo.
+```powershell
+$actividad = 'com.example.primeraclaseprogramacionmobile/.MainActivity'
+adb shell am start -S -n $actividad --es escenario vacio
+adb shell am start -S -n $actividad --es escenario error
+adb shell am start -S -n $actividad --es escenario error_guardado
+```
 
-## Verificación del 28/10/2026, Argentina
+Cada comando inicia una sesión en memoria. Con `vacio` se puede crear el primer recordatorio. Con `error` falla la primera carga y **Reintentar** recupera los datos. Con `error_guardado` el primer guardado falla y el segundo agrega el registro. Para ver los seis ejemplos originales, iniciar con `adb shell am start -S -n $actividad` sin argumentos. La carga y el guardado usan demoras suspendidas para poder observarlos.
 
-- assembleDebug: correcto.
-- testDebugUnitTest: 10 pruebas correctas. Incluyen identificadores y títulos inválidos, descripción ausente, cada filtro, filtros combinados, lista vacía y conservación de los datos originales.
-- connectedDebugAndroidTest: 4 pruebas correctas. Cubren pantalla inicial, desplazamiento al sexto elemento, filtros combinados, ausencia de resultados, vuelta a Todos y recreación de la actividad.
-- lintDebug: correcto, sin errores. Conserva 15 avisos del proyecto base sobre dependencias, colores XML sin uso y una etiqueta redundante en el manifiesto. Se mantuvieron las versiones de producción acordadas.
+Las pruebas de `app/src/test` cubren validaciones, colecciones y filtros. Las de `app/src/androidTest` recorren las pantallas, recrean la actividad y ejercitan los fallos y sus reintentos.
 
-Los reportes se generan en app/build/reports/tests/testDebugUnitTest, app/build/reports/androidTests/connected/debug y app/build/reports/lint-results-debug.html.
-
-Durante las pruebas apareció NoSuchMethodException: InputManager.getInstance en Espresso 3.5.1 al usar Android 37. Se actualizó únicamente espresso-core a 3.7.0 y las cuatro pruebas pasaron. La corrección está documentada en las [notas oficiales de AndroidX Test](https://developer.android.com/jetpack/androidx/releases/test#espresso-3.7.0). Gradle también emite un aviso de deprecación de sun.misc.Unsafe desde protobuf del ejecutor de pruebas; no impide su ejecución.
-
-## Alcance y entrega
-
-Los datos son simulados. No hay formularios de alta o edición, persistencia, sincronización ni servicios en la nube. El trabajo corresponde a API1.
-
-El repositorio es público. El ZIP adjunto al PDF incluye el mismo código publicado, los tests y el Gradle Wrapper. No contiene compilaciones, cachés, local.properties, configuración personal del IDE ni credenciales.
-
-Fuentes de la actividad: [API1 en Canvas](https://teclab.instructure.com/courses/3864/assignments/42397) y [consigna original](https://teclab.instructure.com/courses/3864/files/1354761?wrap=1).
+[Consigna de API2](https://teclab.instructure.com/courses/3864/files/1354756?wrap=1) · [Versión de API1](https://github.com/luquibu/teclab-programacion-mobile/tree/b61851c3d9599dd1400fb54b471457263530f325)

@@ -1,9 +1,5 @@
 <resources>
     <string name="app_name">Mis recordatorios</string>
-    <string name="study_space">PROGRAMACIÓN MOBILE</string>
-    <string name="screen_intro">Organizá tu estudio y tus entregas.</string>
-    <string name="sample_data">Datos de ejemplo</string>
-    <string name="summary">Recordatorios: %1$d · Categorías: %2$d</string>
     <string name="filter_state">Estado</string>
     <string name="filter_priority">Prioridad</string>
     <string name="filter_all">Todos</string>
@@ -20,4 +16,27 @@
     <string name="results_count">%1$d de %2$d</string>
     <string name="empty_title">No hay coincidencias</string>
     <string name="empty_body">Probá otra prioridad o estado para encontrar tus recordatorios.</string>
+    <string name="new_reminder">Crear recordatorio</string>
+    <string name="detail_title">Detalle del recordatorio</string>
+    <string name="return_list">Volver</string>
+    <string name="title_field">Título</string>
+    <string name="description_field">Descripción (opcional)</string>
+    <string name="category_field">Categoría</string>
+    <string name="title_invalid">Escribí al menos cuatro caracteres.</string>
+    <string name="description_invalid">La descripción admite hasta 200 caracteres.</string>
+    <string name="description_count">%1$d/200</string>
+    <string name="save">Guardar</string>
+    <string name="cancel">Cancelar</string>
+    <string name="saving">Guardando…</string>
+    <string name="loading">Cargando recordatorios…</string>
+    <string name="no_reminders">Todavía no hay recordatorios</string>
+    <string name="empty_start">Creá el primero para organizar tu estudio.</string>
+    <string name="load_error">No se pudo cargar el listado</string>
+    <string name="load_error_help">Volvé a intentar para consultar tus recordatorios.</string>
+    <string name="retry">Reintentar</string>
+    <string name="save_error">No se pudo guardar. Tus datos siguen en el formulario. Volvé a intentar.</string>
+    <string name="missing">No se encontró el recordatorio</string>
+    <string name="without_description">Sin descripción</string>
+    <string name="id_label">Recordatorio #%1$d</string>
+    <string name="choose_option">Elegí una opción para guardar.</string>
 </resources>

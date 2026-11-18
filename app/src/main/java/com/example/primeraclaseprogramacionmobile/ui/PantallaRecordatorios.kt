@@ -29,117 +29,142 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.example.primeraclaseprogramacionmobile.R
-import com.example.primeraclaseprogramacionmobile.data.DatosRecordatorios
 import com.example.primeraclaseprogramacionmobile.model.Categoria
 import com.example.primeraclaseprogramacionmobile.model.EstadoRecordatorio
 import com.example.primeraclaseprogramacionmobile.model.Prioridad
 import com.example.primeraclaseprogramacionmobile.model.Recordatorio
-import com.example.primeraclaseprogramacionmobile.model.filtrarRecordatorios
 import com.example.primeraclaseprogramacionmobile.ui.theme.ColoresRecordatorios
-import com.example.primeraclaseprogramacionmobile.ui.theme.PrimeraClaseProgramacionMobileTheme
 
-private data class PresentacionCategoria(@param:StringRes val etiqueta: Int, val color: Color)
+internal data class PresentacionCategoria(@param:StringRes val etiqueta: Int, val color: Color)
 
-private val presentacionesCategoria: Map<Categoria, PresentacionCategoria> = mapOf(
+internal val presentacionesCategoria: Map<Categoria, PresentacionCategoria> = mapOf(
     Categoria.Estudio to PresentacionCategoria(R.string.category_study, ColoresRecordatorios.IdentidadEstudio),
     Categoria.Entregas to PresentacionCategoria(R.string.category_deliveries, ColoresRecordatorios.IdentidadEntregas),
     Categoria.Examenes to PresentacionCategoria(R.string.category_exams, ColoresRecordatorios.IdentidadExamenes),
 )
 
 @Composable
-fun PantallaRecordatorios() {
-    // Guardar claves simples permite restaurar los filtros al recrear la Activity.
-    var prioridadClave by rememberSaveable { mutableStateOf<String?>(null) }
-    var estadoClave by rememberSaveable { mutableStateOf<String?>(null) }
-    val prioridad = Prioridad.opciones.find { it.clave == prioridadClave }
-    val estado = EstadoRecordatorio.opciones.find { it.clave == estadoClave }
-    val recordatorios = DatosRecordatorios.recordatorios
-    val visibles = filtrarRecordatorios(recordatorios, prioridad, estado)
+fun PantallaRecordatorios(
+    ui: ListadoUiState,
+    onPrioridad: (Prioridad?) -> Unit,
+    onEstado: (EstadoRecordatorio?) -> Unit,
+    onCrear: () -> Unit,
+    onSeleccionar: (Long) -> Unit,
+    onReintentar: () -> Unit,
+) {
+    Scaffold(
+        topBar = { BarraPantalla(stringResource(R.string.app_name)) },
+        floatingActionButton = {
+            if (ui is ListadoUiState.Datos) {
+                ExtendedFloatingActionButton(
+                    onClick = onCrear,
+                    modifier = Modifier.testTag("crear"),
+                    containerColor = MaterialTheme.colorScheme.primary,
+                ) { Text("＋  " + stringResource(R.string.new_reminder)) }
+            }
+        },
+    ) { margen ->
+        val contenido = Modifier.fillMaxSize().padding(margen)
+        when (ui) {
+            ListadoUiState.Cargando -> MensajePantalla(R.string.loading, modifier = contenido, cargando = true)
+            ListadoUiState.Vacio -> MensajePantalla(
+                R.string.no_reminders, contenido, R.string.empty_start, R.string.new_reminder, onCrear,
+            )
+            ListadoUiState.Error -> MensajePantalla(
+                R.string.load_error, contenido, R.string.load_error_help, R.string.retry, onReintentar,
+            )
+            is ListadoUiState.Datos -> ListaConFiltros(ui, onPrioridad, onEstado, onSeleccionar, contenido)
+        }
+    }
+}
 
-    Scaffold { espacioSistema ->
-        LazyColumn(
-            modifier = Modifier.fillMaxSize().padding(espacioSistema).testTag("lista-recordatorios"),
-            contentPadding = PaddingValues(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-            item(key = "encabezado") {
-                Encabezado(recordatorios.size, DatosRecordatorios.categorias.size)
-            }
-            item(key = "filtros") {
-                Column {
-                    EtiquetaSeccion(R.string.filter_state)
-                    Row(
-                        modifier = Modifier.horizontalScroll(rememberScrollState()),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    ) {
-                        FiltroRecordatorio(estado == null, { estadoClave = null }, R.string.filter_all, "estado-todos")
-                        EstadoRecordatorio.opciones.forEach { opcion ->
-                            FiltroRecordatorio(
-                                estado == opcion, { estadoClave = opcion.clave },
-                                etiquetaEstado(opcion), "estado-${opcion.clave}",
-                            )
-                        }
+@Composable
+private fun ListaConFiltros(
+    ui: ListadoUiState.Datos,
+    onPrioridad: (Prioridad?) -> Unit,
+    onEstado: (EstadoRecordatorio?) -> Unit,
+    onSeleccionar: (Long) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val (prioridad, estado) = ui.filtros
+    val visibles = ui.visibles
+    LazyColumn(
+        modifier = modifier.testTag("lista-recordatorios"),
+        contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 88.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        item(key = "filtros") {
+            Column {
+                EtiquetaSeccion(R.string.filter_state)
+                Row(
+                    modifier = Modifier.horizontalScroll(rememberScrollState()),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    FiltroRecordatorio(estado == null, { onEstado(null) }, R.string.filter_all, "estado-todos")
+                    EstadoRecordatorio.opciones.forEach { opcion ->
+                        FiltroRecordatorio(
+                            estado == opcion, { onEstado(opcion) },
+                            etiquetaEstado(opcion), "estado-${opcion.clave}",
+                        )
                     }
-                    Spacer(Modifier.height(8.dp))
-                    EtiquetaSeccion(R.string.filter_priority)
-                    Row(
-                        modifier = Modifier.horizontalScroll(rememberScrollState()),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    ) {
-                        FiltroRecordatorio(prioridad == null, { prioridadClave = null }, R.string.filter_all, "prioridad-todos")
-                        Prioridad.opciones.forEach { opcion ->
-                            FiltroRecordatorio(
-                                prioridad == opcion, { prioridadClave = opcion.clave },
-                                etiquetaPrioridad(opcion), "prioridad-${opcion.clave}",
-                            )
-                        }
+                }
+                Spacer(Modifier.height(8.dp))
+                EtiquetaSeccion(R.string.filter_priority)
+                Row(
+                    modifier = Modifier.horizontalScroll(rememberScrollState()),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    FiltroRecordatorio(prioridad == null, { onPrioridad(null) }, R.string.filter_all, "prioridad-todos")
+                    Prioridad.opciones.forEach { opcion ->
+                        FiltroRecordatorio(
+                            prioridad == opcion, { onPrioridad(opcion) },
+                            etiquetaPrioridad(opcion), "prioridad-${opcion.clave}",
+                        )
+                    }
+                }
+            }
+        }
+        item(key = "resultados") {
+            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                EtiquetaSeccion(R.string.results_title, Modifier.weight(1f))
+                Text(
+                    stringResource(R.string.results_count, visibles.size, ui.total),
+                    style = MaterialTheme.typography.labelMedium,
+                    fontFamily = FontFamily.Monospace,
+                    color = ColoresRecordatorios.TextoSecundario,
+                    modifier = Modifier.testTag("cantidad-resultados"),
+                )
+            }
+        }
+        if (visibles.isEmpty()) {
+            item(key = "vacio") {
+                Card(
+                    Modifier.fillMaxWidth().testTag("sin-coincidencias"),
+                    colors = CardDefaults.cardColors(containerColor = ColoresRecordatorios.Tarjeta),
+                    border = BorderStroke(1.dp, ColoresRecordatorios.Borde),
+                ) {
+                    Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Text(stringResource(R.string.empty_title), style = MaterialTheme.typography.titleMedium)
+                        Text(
+                            stringResource(R.string.empty_body), style = MaterialTheme.typography.bodyMedium,
+                            color = ColoresRecordatorios.TextoSecundario,
+                        )
                     }
                 }
             }
-            item(key = "resultados") {
-                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                    EtiquetaSeccion(R.string.results_title, Modifier.weight(1f))
-                    Text(
-                        stringResource(R.string.results_count, visibles.size, recordatorios.size),
-                        style = MaterialTheme.typography.labelMedium,
-                        fontFamily = FontFamily.Monospace,
-                        color = ColoresRecordatorios.TextoSecundario,
-                        modifier = Modifier.testTag("cantidad-resultados"),
-                    )
-                }
-            }
-            if (visibles.isEmpty()) {
-                item(key = "vacio") {
-                    Card(
-                        Modifier.fillMaxWidth().testTag("sin-coincidencias"),
-                        colors = CardDefaults.cardColors(containerColor = ColoresRecordatorios.Tarjeta),
-                        border = BorderStroke(1.dp, ColoresRecordatorios.Borde),
-                    ) {
-                        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                            Text(stringResource(R.string.empty_title), style = MaterialTheme.typography.titleMedium)
-                            Text(
-                                stringResource(R.string.empty_body), style = MaterialTheme.typography.bodyMedium,
-                                color = ColoresRecordatorios.TextoSecundario,
-                            )
-                        }
-                    }
-                }
-            } else {
-                items(visibles, key = { it.id }) { recordatorio -> TarjetaRecordatorio(recordatorio) }
+        } else {
+            items(visibles, key = { it.id }) { recordatorio ->
+                TarjetaRecordatorio(recordatorio, { onSeleccionar(recordatorio.id) })
             }
         }
     }
@@ -154,12 +179,12 @@ private fun EtiquetaSeccion(@StringRes etiqueta: Int, modifier: Modifier = Modif
 }
 
 @Composable
-private fun FiltroRecordatorio(selected: Boolean, onClick: () -> Unit, @StringRes etiqueta: Int, tag: String) {
+private fun FiltroRecordatorio(selected: Boolean, onClick: () -> Unit, @StringRes etiqueta: Int, tag: String, modifier: Modifier = Modifier) {
     FilterChip(
         selected = selected,
         onClick = onClick,
         label = { Text(stringResource(etiqueta)) },
-        modifier = Modifier.heightIn(min = 48.dp).testTag(tag),
+        modifier = modifier.heightIn(min = 48.dp).testTag(tag),
         shape = MaterialTheme.shapes.small,
         colors = FilterChipDefaults.filterChipColors(
             containerColor = ColoresRecordatorios.Tarjeta,
@@ -172,33 +197,11 @@ private fun FiltroRecordatorio(selected: Boolean, onClick: () -> Unit, @StringRe
 }
 
 @Composable
-private fun Encabezado(total: Int, categorias: Int) {
-    Column(
-        modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp),
-    ) {
-        EtiquetaSeccion(R.string.study_space)
-        Text(stringResource(R.string.app_name), style = MaterialTheme.typography.titleLarge)
-        Text(
-            stringResource(R.string.screen_intro), style = MaterialTheme.typography.bodyMedium,
-            color = ColoresRecordatorios.TextoSecundario,
-        )
-        Text(
-            stringResource(R.string.summary, total, categorias), style = MaterialTheme.typography.labelMedium,
-            fontFamily = FontFamily.Monospace, color = ColoresRecordatorios.TextoSecundario,
-        )
-        Text(
-            stringResource(R.string.sample_data), style = MaterialTheme.typography.labelMedium,
-            color = ColoresRecordatorios.TextoSecundario,
-        )
-    }
-}
-
-@Composable
-private fun TarjetaRecordatorio(recordatorio: Recordatorio) {
+private fun TarjetaRecordatorio(recordatorio: Recordatorio, onClick: () -> Unit, modifier: Modifier = Modifier) {
     val categoria = presentacionesCategoria.getValue(recordatorio.categoria)
     Card(
-        modifier = Modifier.fillMaxWidth().testTag("recordatorio-${recordatorio.id}"),
+        onClick = onClick,
+        modifier = modifier.fillMaxWidth().testTag("recordatorio-${recordatorio.id}"),
         shape = MaterialTheme.shapes.medium,
         colors = CardDefaults.cardColors(containerColor = ColoresRecordatorios.Tarjeta),
         border = BorderStroke(1.dp, ColoresRecordatorios.Borde),
@@ -242,20 +245,14 @@ private fun IndicadorEstado(estado: EstadoRecordatorio, modifier: Modifier = Mod
 }
 
 @StringRes
-private fun etiquetaPrioridad(prioridad: Prioridad): Int = when (prioridad) {
+internal fun etiquetaPrioridad(prioridad: Prioridad): Int = when (prioridad) {
     Prioridad.Alta -> R.string.priority_high
     Prioridad.Media -> R.string.priority_medium
     Prioridad.Baja -> R.string.priority_low
 }
 
 @StringRes
-private fun etiquetaEstado(estado: EstadoRecordatorio): Int = when (estado) {
+internal fun etiquetaEstado(estado: EstadoRecordatorio): Int = when (estado) {
     EstadoRecordatorio.Pendiente -> R.string.state_pending
     EstadoRecordatorio.Completado -> R.string.state_completed
-}
-
-@Preview(showBackground = true)
-@Composable
-private fun VistaPreviaRecordatorios() {
-    PrimeraClaseProgramacionMobileTheme { PantallaRecordatorios() }
 }

@@ -9,6 +9,7 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollToIndex
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -18,13 +19,18 @@ class RecordatoriosPantallaTest {
     @get:Rule
     val compose = createAndroidComposeRule<MainActivity>()
 
+    @Before
+    fun esperarCarga() {
+        compose.waitUntil(5_000) { compose.onAllNodes(androidx.compose.ui.test.hasTestTag("cantidad-resultados")).fetchSemanticsNodes().isNotEmpty() }
+    }
+
     @Test
     fun muestraLosSeisDatosYPermiteLlegarAlUltimo() {
         compose.onNodeWithText("Mis recordatorios").assertIsDisplayed()
         compose.onNodeWithTag("cantidad-resultados").assertTextEquals("6 de 6")
-        compose.onNodeWithTag("lista-recordatorios").performScrollToIndex(8)
+        compose.onNodeWithTag("lista-recordatorios").performScrollToIndex(7)
         compose.onNodeWithTag("recordatorio-6").assertIsDisplayed()
-        compose.onNodeWithText("Organizar las evidencias de ejecución").assertIsDisplayed()
+        compose.onNodeWithText("Organizar las evidencias de ejecución", useUnmergedTree = true).assertIsDisplayed()
     }
 
     @Test
@@ -32,7 +38,7 @@ class RecordatoriosPantallaTest {
         compose.onNodeWithTag("prioridad-media").performClick()
         compose.onNodeWithTag("estado-completado").performClick()
         compose.onNodeWithTag("cantidad-resultados").assertTextEquals("1 de 6")
-        compose.onNodeWithTag("lista-recordatorios").performScrollToIndex(3)
+        compose.onNodeWithTag("lista-recordatorios").performScrollToIndex(2)
         compose.onNodeWithTag("recordatorio-5").assertIsDisplayed()
         compose.onNodeWithTag("recordatorio-3").assertDoesNotExist()
     }
@@ -42,7 +48,7 @@ class RecordatoriosPantallaTest {
         compose.onNodeWithTag("prioridad-alta").performClick()
         compose.onNodeWithTag("estado-completado").performClick()
         compose.onNodeWithTag("cantidad-resultados").assertTextEquals("0 de 6")
-        compose.onNodeWithTag("lista-recordatorios").performScrollToIndex(3)
+        compose.onNodeWithTag("lista-recordatorios").performScrollToIndex(2)
         compose.onNodeWithText("No hay coincidencias").assertIsDisplayed()
         compose.onNodeWithTag("lista-recordatorios").performScrollToIndex(0)
         compose.onNodeWithTag("prioridad-todos").performClick()
@@ -55,10 +61,11 @@ class RecordatoriosPantallaTest {
         compose.onNodeWithTag("prioridad-baja").performClick()
         compose.onNodeWithTag("estado-pendiente").performClick()
         compose.activityRule.scenario.recreate()
+        esperarCarga()
         compose.onNodeWithTag("prioridad-baja").assertIsSelected()
         compose.onNodeWithTag("estado-pendiente").assertIsSelected()
         compose.onNodeWithTag("cantidad-resultados").assertTextEquals("1 de 6")
-        compose.onNodeWithTag("lista-recordatorios").performScrollToIndex(3)
+        compose.onNodeWithTag("lista-recordatorios").performScrollToIndex(2)
         compose.onNodeWithTag("recordatorio-6").assertIsDisplayed()
     }
 }

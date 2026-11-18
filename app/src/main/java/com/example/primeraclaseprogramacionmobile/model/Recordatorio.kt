@@ -12,7 +12,7 @@ sealed class Prioridad(val clave: String) {
     data object Baja : Prioridad("baja")
 
     companion object {
-        val opciones: List<Prioridad> = listOf(Alta, Media, Baja)
+        val opciones: List<Prioridad> get() = listOf(Alta, Media, Baja)
     }
 }
 
@@ -21,7 +21,7 @@ sealed class EstadoRecordatorio(val clave: String) {
     data object Completado : EstadoRecordatorio("completado")
 
     companion object {
-        val opciones: List<EstadoRecordatorio> = listOf(Pendiente, Completado)
+        val opciones: List<EstadoRecordatorio> get() = listOf(Pendiente, Completado)
     }
 }
 
@@ -41,7 +41,7 @@ data class Recordatorio(
 ) {
     init {
         require(id > 0) { "El identificador debe ser positivo." }
-        require(titulo.trim().length >= 4) { "El título debe tener al menos cuatro caracteres." }
+        require(titulo.trim().cantidadCaracteres() >= 4) { "El título debe tener al menos cuatro caracteres." }
     }
 }
 

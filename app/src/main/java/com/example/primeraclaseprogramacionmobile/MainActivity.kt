@@ -5,8 +5,15 @@ import androidx.activity.ComponentActivity
 import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import com.example.primeraclaseprogramacionmobile.ui.PantallaRecordatorios
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.primeraclaseprogramacionmobile.data.RepositorioEnMemoria
+import com.example.primeraclaseprogramacionmobile.ui.Navegacion
 import com.example.primeraclaseprogramacionmobile.ui.theme.PrimeraClaseProgramacionMobileTheme
+
+class SesionRecordatorios(escenario: String?) : ViewModel() {
+    val repositorio = RepositorioEnMemoria(escenario)
+}
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -17,7 +24,8 @@ class MainActivity : ComponentActivity() {
         )
         setContent {
             PrimeraClaseProgramacionMobileTheme {
-                PantallaRecordatorios()
+                val sesion = viewModel { SesionRecordatorios(intent.getStringExtra("escenario")) }
+                Navegacion(sesion.repositorio)
             }
         }
     }
