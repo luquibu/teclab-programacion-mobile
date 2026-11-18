@@ -1,5 +1,9 @@
 package com.example.primeraclaseprogramacionmobile.ui
 
+import androidx.compose.material3.TextButton
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.ui.graphics.luminance
+import com.example.primeraclaseprogramacionmobile.data.Sincronizacion
 import androidx.annotation.StringRes
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
@@ -61,9 +65,20 @@ fun PantallaRecordatorios(
     onCrear: () -> Unit,
     onSeleccionar: (Long) -> Unit,
     onReintentar: () -> Unit,
+    red: Sincronizacion, onSincronizar: () -> Unit, onAjustes: () -> Unit,
 ) {
     Scaffold(
-        topBar = { BarraPantalla(stringResource(R.string.app_name)) },
+        topBar = { BarraPantalla(stringResource(R.string.app_name)) {
+            TextButton(onAjustes) { Text(stringResource(R.string.settings)) }
+        } },
+        bottomBar = { Surface(tonalElevation = 2.dp) {
+            Row(Modifier.fillMaxWidth().navigationBarsPadding().padding(horizontal = 16.dp), verticalAlignment = Alignment.CenterVertically) {
+                Text(stringResource(mensajeRed(red)), Modifier.weight(1f), style = MaterialTheme.typography.bodySmall)
+                TextButton(onSincronizar, enabled = red != Sincronizacion.EnCurso) {
+                    Text(stringResource(when (red) { Sincronizacion.FaltaPermiso -> R.string.allow_network; Sincronizacion.AlDia -> R.string.sync_now; else -> R.string.retry }))
+                }
+            }
+        } },
         floatingActionButton = {
             if (ui is ListadoUiState.Datos) {
                 ExtendedFloatingActionButton(
@@ -141,7 +156,7 @@ private fun ListaConFiltros(
                     stringResource(R.string.results_count, visibles.size, ui.total),
                     style = MaterialTheme.typography.labelMedium,
                     fontFamily = FontFamily.Monospace,
-                    color = ColoresRecordatorios.TextoSecundario,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.testTag("cantidad-resultados"),
                 )
             }
@@ -150,14 +165,14 @@ private fun ListaConFiltros(
             item(key = "vacio") {
                 Card(
                     Modifier.fillMaxWidth().testTag("sin-coincidencias"),
-                    colors = CardDefaults.cardColors(containerColor = ColoresRecordatorios.Tarjeta),
-                    border = BorderStroke(1.dp, ColoresRecordatorios.Borde),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
                 ) {
                     Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         Text(stringResource(R.string.empty_title), style = MaterialTheme.typography.titleMedium)
                         Text(
                             stringResource(R.string.empty_body), style = MaterialTheme.typography.bodyMedium,
-                            color = ColoresRecordatorios.TextoSecundario,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
                 }
@@ -174,7 +189,7 @@ private fun ListaConFiltros(
 private fun EtiquetaSeccion(@StringRes etiqueta: Int, modifier: Modifier = Modifier) {
     Text(
         stringResource(etiqueta), modifier,
-        style = MaterialTheme.typography.labelSmall, color = ColoresRecordatorios.TextoSecundario,
+        style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
     )
 }
 
@@ -187,12 +202,12 @@ private fun FiltroRecordatorio(selected: Boolean, onClick: () -> Unit, @StringRe
         modifier = modifier.heightIn(min = 48.dp).testTag(tag),
         shape = MaterialTheme.shapes.small,
         colors = FilterChipDefaults.filterChipColors(
-            containerColor = ColoresRecordatorios.Tarjeta,
-            labelColor = ColoresRecordatorios.TextoSecundario,
+            containerColor = MaterialTheme.colorScheme.surface,
+            labelColor = MaterialTheme.colorScheme.onSurfaceVariant,
             selectedContainerColor = ColoresRecordatorios.Seleccion.copy(alpha = 0.15f),
-            selectedLabelColor = ColoresRecordatorios.Texto,
+            selectedLabelColor = MaterialTheme.colorScheme.onSurface,
         ),
-        border = BorderStroke(1.dp, if (selected) ColoresRecordatorios.Seleccion else ColoresRecordatorios.Borde),
+        border = BorderStroke(1.dp, if (selected) ColoresRecordatorios.Seleccion else MaterialTheme.colorScheme.outline),
     )
 }
 
@@ -203,25 +218,25 @@ private fun TarjetaRecordatorio(recordatorio: Recordatorio, onClick: () -> Unit,
         onClick = onClick,
         modifier = modifier.fillMaxWidth().testTag("recordatorio-${recordatorio.id}"),
         shape = MaterialTheme.shapes.medium,
-        colors = CardDefaults.cardColors(containerColor = ColoresRecordatorios.Tarjeta),
-        border = BorderStroke(1.dp, ColoresRecordatorios.Borde),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
     ) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Surface(color = ColoresRecordatorios.Secundario, shape = MaterialTheme.shapes.extraSmall) {
+            Surface(color = MaterialTheme.colorScheme.surfaceVariant, shape = MaterialTheme.shapes.extraSmall) {
                 Text(
                     stringResource(categoria.etiqueta), Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                    style = MaterialTheme.typography.labelMedium, color = categoria.color,
+                    style = MaterialTheme.typography.labelMedium, color = if (MaterialTheme.colorScheme.surface.luminance() > .5f) MaterialTheme.colorScheme.onSurfaceVariant else categoria.color,
                 )
             }
             Text(recordatorio.titulo, style = MaterialTheme.typography.titleMedium)
             recordatorio.descripcion?.let { descripcion ->
-                Text(descripcion, style = MaterialTheme.typography.bodyMedium, color = ColoresRecordatorios.TextoSecundario)
+                Text(descripcion, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
                 Text(
                     stringResource(R.string.priority_label, stringResource(etiquetaPrioridad(recordatorio.prioridad))),
                     modifier = Modifier.weight(1f), style = MaterialTheme.typography.labelMedium,
-                    color = ColoresRecordatorios.TextoSecundario,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 IndicadorEstado(recordatorio.estado, Modifier.weight(1f))
             }
@@ -232,7 +247,7 @@ private fun TarjetaRecordatorio(recordatorio: Recordatorio, onClick: () -> Unit,
 @Composable
 private fun IndicadorEstado(estado: EstadoRecordatorio, modifier: Modifier = Modifier) {
     val completado = estado == EstadoRecordatorio.Completado
-    val color = if (completado) ColoresRecordatorios.Completado else ColoresRecordatorios.TextoSecundario
+    val color = if (completado && MaterialTheme.colorScheme.surface.luminance() > .5f) Color(0xFF176442) else if (completado) ColoresRecordatorios.Completado else MaterialTheme.colorScheme.onSurfaceVariant
     Row(modifier, horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
         Box(
             Modifier.size(6.dp).then(
@@ -255,4 +270,18 @@ internal fun etiquetaPrioridad(prioridad: Prioridad): Int = when (prioridad) {
 internal fun etiquetaEstado(estado: EstadoRecordatorio): Int = when (estado) {
     EstadoRecordatorio.Pendiente -> R.string.state_pending
     EstadoRecordatorio.Completado -> R.string.state_completed
+}
+
+@StringRes
+private fun mensajeRed(red: Sincronizacion): Int = when (red) {
+    Sincronizacion.FaltaPermiso -> R.string.network_permission
+    Sincronizacion.EnEspera -> R.string.sync_wait
+    Sincronizacion.EnCurso -> R.string.sync_running
+    Sincronizacion.AlDia -> R.string.sync_ok
+    Sincronizacion.SinConexion -> R.string.offline
+    Sincronizacion.TiempoAgotado -> R.string.timeout
+    Sincronizacion.SolicitudInvalida -> R.string.bad_request
+    Sincronizacion.ErrorServidor -> R.string.server_error
+    Sincronizacion.DatosInvalidos -> R.string.bad_data
+    Sincronizacion.ErrorLocal -> R.string.local_error
 }

@@ -6,16 +6,19 @@ import com.example.primeraclaseprogramacionmobile.data.RepositorioRecordatorios
 import com.example.primeraclaseprogramacionmobile.model.Borrador
 import com.example.primeraclaseprogramacionmobile.model.Categoria
 import com.example.primeraclaseprogramacionmobile.model.Prioridad
+import com.example.primeraclaseprogramacionmobile.model.EstadoRecordatorio
+import kotlinx.coroutines.flow.first
 import java.io.IOException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
-enum class Envio { Edicion, EnCurso, Guardado, Error }
+enum class Envio { Cargando, Ausente, Inaccesible, Edicion, EnCurso, Guardado, Error }
 
 data class CreacionUiState(
     val borrador: Borrador = Borrador(),
+    val estadoRegistro: EstadoRecordatorio = EstadoRecordatorio.Pendiente,
     val tituloEditado: Boolean = false,
     val envio: Envio = Envio.Edicion,
 ) {
@@ -24,9 +27,22 @@ data class CreacionUiState(
     val errorTitulo get() = tituloEditado && !borrador.tituloValido
 }
 
-class CreacionViewModel(private val repositorio: RepositorioRecordatorios) : ViewModel() {
-    private val estado = MutableStateFlow(CreacionUiState())
+class CreacionViewModel(private val repositorio: RepositorioRecordatorios, private val id: Long? = null) : ViewModel() {
+    private val estado = MutableStateFlow(CreacionUiState(envio = if (id == null) Envio.Edicion else Envio.Cargando))
     val uiState = estado.asStateFlow()
+
+    init {
+        if (id != null) viewModelScope.launch {
+            val r = try { repositorio.observar(id).first() } catch (_: android.database.sqlite.SQLiteException) {
+                estado.value = CreacionUiState(envio = Envio.Inaccesible)
+                return@launch
+            }
+            estado.value = if (r == null) CreacionUiState(envio = Envio.Ausente) else
+                CreacionUiState(Borrador(r.titulo, r.descripcion.orEmpty(), r.categoria, r.prioridad), r.estado)
+        }
+    }
+
+    fun estadoRegistro(valor: EstadoRecordatorio) = editar { it.copy(estadoRegistro = valor) }
 
     private fun editar(cambio: (CreacionUiState) -> CreacionUiState) = estado.update {
         if (it.editable) cambio(it).copy(envio = Envio.Edicion) else it
@@ -42,7 +58,8 @@ class CreacionViewModel(private val repositorio: RepositorioRecordatorios) : Vie
         if (!actual.puedeGuardar || !estado.compareAndSet(actual, actual.copy(envio = Envio.EnCurso))) return
         viewModelScope.launch {
             val resultado = try {
-                repositorio.guardar(actual.borrador)
+                if (id == null) repositorio.guardar(actual.borrador)
+                else repositorio.modificar(id, actual.borrador, actual.estadoRegistro)
                 Envio.Guardado
             } catch (_: IOException) {
                 Envio.Error

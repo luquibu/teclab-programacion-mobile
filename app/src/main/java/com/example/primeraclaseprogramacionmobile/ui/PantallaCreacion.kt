@@ -29,9 +29,15 @@ fun PantallaCreacion(
     onPrioridad: (Prioridad) -> Unit,
     onGuardar: () -> Unit,
     onCancelar: () -> Unit,
+    edicion: Boolean = false,
+    onEstado: (com.example.primeraclaseprogramacionmobile.model.EstadoRecordatorio) -> Unit = {},
 ) {
-    BackHandler(enabled = !ui.editable) { /* El envío en curso conserva su destino. */ }
-    Scaffold(topBar = { BarraPantalla(stringResource(R.string.new_reminder)) }) { margen ->
+    if (ui.envio == Envio.Inaccesible || ui.envio == Envio.Ausente) {
+        MensajePantalla(if (ui.envio == Envio.Ausente) R.string.missing else R.string.local_error, Modifier.fillMaxSize(), accion = R.string.return_list, onAccion = onCancelar)
+        return
+    }
+    BackHandler(enabled = ui.envio == Envio.EnCurso) { /* El envío en curso conserva su destino. */ }
+    Scaffold(topBar = { BarraPantalla(stringResource(if (edicion) R.string.edit_reminder else R.string.new_reminder)) }) { margen ->
         Column(
             Modifier.fillMaxSize().padding(margen).imePadding().verticalScroll(rememberScrollState())
                 .padding(horizontal = 16.dp, vertical = 12.dp),
@@ -50,6 +56,8 @@ fun PantallaCreacion(
                 { presentacionesCategoria.getValue(it).etiqueta }, ui.editable, onCategoria, ancho,
             )
             Opciones(R.string.filter_priority, Prioridad.opciones, b.prioridad, ::etiquetaPrioridad, ui.editable, onPrioridad, ancho)
+            if (edicion) Opciones(R.string.filter_state, com.example.primeraclaseprogramacionmobile.model.EstadoRecordatorio.opciones,
+                ui.estadoRegistro, ::etiquetaEstado, ui.editable, onEstado, ancho)
             if (ui.envio == Envio.Error) {
                 Text(stringResource(R.string.save_error), ancho.semantics { liveRegion = LiveRegionMode.Polite },
                     color = MaterialTheme.colorScheme.error)

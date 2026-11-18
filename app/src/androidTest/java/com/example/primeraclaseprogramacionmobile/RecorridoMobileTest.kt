@@ -15,9 +15,11 @@ class RecorridoMobileTest {
     private val instrumentacion get() = InstrumentationRegistry.getInstrumentation()
 
     private fun iniciar(escenario: String? = null): ActivityScenario<MainActivity> {
+        prepararEjemplos(escenario != "vacio")
+        appPrueba.fallaGuardado = escenario == "error_guardado"
         val intent = Intent(instrumentacion.targetContext, MainActivity::class.java)
             .setFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
-            .putExtra("escenario", escenario)
+
         return ActivityScenario.launch(intent)
     }
 
@@ -64,10 +66,10 @@ class RecorridoMobileTest {
             captura("formulario")
             compose.onNodeWithTag("guardar").performScrollTo().performClick()
             compose.onNodeWithTag("guardar").assertIsNotEnabled()
-            esperar(hasTestTag("recordatorio-7"))
+            esperar(hasText("7 de 7"))
             compose.onNodeWithTag("cantidad-resultados").assertTextEquals("7 de 7")
-            compose.onNodeWithTag("recordatorio-7").performClick()
-            esperar(hasText("Recordatorio #7"))
+            compose.onNodeWithText("Preparar el parcial").performClick()
+            esperar(hasText("Pendiente de sincronizar"))
             compose.onNodeWithText("Preparar el parcial").assertIsDisplayed()
             compose.onNodeWithText("Exámenes").assertIsDisplayed()
             captura("detalle")
@@ -104,13 +106,23 @@ class RecorridoMobileTest {
         }
     }
 
-    @Test fun reintentaCargaSimulada() {
-        iniciar("error").use {
-            esperar(hasText("Reintentar"))
-            captura("error")
-            compose.onNodeWithText("Reintentar").performClick()
-            esperar(hasTestTag("cantidad-resultados"))
-            compose.onNodeWithTag("cantidad-resultados").assertTextEquals("6 de 6")
+    @Test fun editarCompletarYEliminarUnRecordatorio() {
+        iniciar().use {
+            esperar(hasTestTag("recordatorio-1"))
+            compose.onNodeWithTag("recordatorio-1").performClick()
+            esperar(hasText("Editar"))
+            compose.onNodeWithText("Editar").performClick()
+            esperar(hasTestTag("titulo") and isEnabled())
+            compose.onNodeWithTag("titulo").performTextReplacement("Repasar Room")
+            compose.onNodeWithText("Completado").performScrollTo().performClick()
+            compose.onNodeWithTag("guardar").performScrollTo().performClick()
+            esperar(hasText("Detalle del recordatorio"))
+            compose.onNodeWithText("Repasar Room").assertExists()
+            compose.onNodeWithText("Completado").assertExists()
+            compose.onNodeWithText("Eliminar").performClick()
+            compose.onNodeWithText("¿Eliminar este recordatorio?").assertExists()
+            compose.onAllNodesWithText("Eliminar").onLast().performClick()
+            esperar(hasText("5 de 5"))
         }
     }
 

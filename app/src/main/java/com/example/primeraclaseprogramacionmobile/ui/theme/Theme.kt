@@ -5,6 +5,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Shapes
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.material3.lightColorScheme
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 
 private val EsquemaOscuro = darkColorScheme(
@@ -24,10 +26,10 @@ private val EsquemaOscuro = darkColorScheme(
 )
 
 @Composable
-fun PrimeraClaseProgramacionMobileTheme(content: @Composable () -> Unit) {
-    // La paleta es fija: los colores dinámicos del dispositivo romperían los roles de AxForge.
+fun PrimeraClaseProgramacionMobileTheme(claro: Boolean = false, content: @Composable () -> Unit) {
     MaterialTheme(
-        colorScheme = EsquemaOscuro,
+        colorScheme = if (claro) lightColorScheme(primary = Color(0xFF543894), secondary = Color(0xFF425879),
+            background = Color(0xFFF5F6F8), surface = Color.White, outline = Color(0xFF697281)) else EsquemaOscuro,
         typography = Typography,
         shapes = Shapes(
             extraSmall = RoundedCornerShape(4.dp),

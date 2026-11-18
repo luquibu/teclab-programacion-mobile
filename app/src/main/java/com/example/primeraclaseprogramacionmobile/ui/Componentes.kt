@@ -16,9 +16,10 @@ import com.example.primeraclaseprogramacionmobile.R
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-internal fun BarraPantalla(titulo: String, modifier: Modifier = Modifier, onVolver: (() -> Unit)? = null) {
+internal fun BarraPantalla(titulo: String, modifier: Modifier = Modifier, onVolver: (() -> Unit)? = null, acciones: @Composable RowScope.() -> Unit = {}) {
     TopAppBar(
         modifier = modifier,
+        actions = acciones,
         title = { Text(titulo, style = MaterialTheme.typography.titleLarge) },
         navigationIcon = {
             if (onVolver != null) {

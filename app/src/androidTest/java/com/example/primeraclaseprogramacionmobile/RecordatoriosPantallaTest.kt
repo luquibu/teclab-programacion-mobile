@@ -20,7 +20,9 @@ class RecordatoriosPantallaTest {
     val compose = createAndroidComposeRule<MainActivity>()
 
     @Before
-    fun esperarCarga() {
+    fun preparar() { prepararEjemplos(); esperarCarga() }
+
+    private fun esperarCarga() {
         compose.waitUntil(5_000) { compose.onAllNodes(androidx.compose.ui.test.hasTestTag("cantidad-resultados")).fetchSemanticsNodes().isNotEmpty() }
     }
 

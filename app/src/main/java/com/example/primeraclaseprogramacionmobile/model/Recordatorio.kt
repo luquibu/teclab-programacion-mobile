@@ -38,6 +38,8 @@ data class Recordatorio(
     val prioridad: Prioridad,
     val estado: EstadoRecordatorio,
     val descripcion: String? = null,
+    val fecha: Long = 0,
+    val sincronizado: Boolean = false,
 ) {
     init {
         require(id > 0) { "El identificador debe ser positivo." }

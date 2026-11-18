@@ -1,44 +1,23 @@
 package com.example.primeraclaseprogramacionmobile.data
 
-import com.example.primeraclaseprogramacionmobile.model.Borrador
-import com.example.primeraclaseprogramacionmobile.model.Recordatorio
-import java.io.IOException
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.MutableStateFlow
+import com.example.primeraclaseprogramacionmobile.data.local.Orden
+import com.example.primeraclaseprogramacionmobile.data.local.Preferencias
+import com.example.primeraclaseprogramacionmobile.model.*
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.update
+
+enum class Sincronizacion { FaltaPermiso, EnEspera, EnCurso, AlDia, SinConexion, TiempoAgotado, SolicitudInvalida, ErrorServidor, DatosInvalidos, ErrorLocal }
 
 interface RepositorioRecordatorios {
-    val recordatorios: StateFlow<List<Recordatorio>>
-    suspend fun cargar()
+    val preferencias: Flow<Preferencias>
+    val sincronizacion: StateFlow<Sincronizacion>
+    fun registros(estado: EstadoRecordatorio? = null): Flow<List<Recordatorio>>
+    fun observar(id: Long): Flow<Recordatorio?>
     suspend fun guardar(borrador: Borrador)
-}
-
-class RepositorioEnMemoria(escenario: String? = null) : RepositorioRecordatorios {
-    private val datos = MutableStateFlow(
-        if (escenario == "vacio") emptyList() else DatosRecordatorios.recordatorios,
-    )
-    override val recordatorios = datos.asStateFlow()
-    private var fallaCarga = escenario == "error"
-    private var fallaGuardado = escenario == "error_guardado"
-
-    override suspend fun cargar() {
-        delay(350)
-        if (fallaCarga) {
-            fallaCarga = false
-            throw IOException("Error de carga simulado")
-        }
-    }
-
-    override suspend fun guardar(borrador: Borrador) {
-        delay(700)
-        if (fallaGuardado) {
-            fallaGuardado = false
-            throw IOException("Error de guardado simulado")
-        }
-        datos.update { actuales ->
-            listOf(borrador.recordatorio((actuales.maxOfOrNull { it.id } ?: 0L) + 1)) + actuales
-        }
-    }
+    suspend fun modificar(id: Long, borrador: Borrador, estado: EstadoRecordatorio)
+    suspend fun eliminar(id: Long)
+    suspend fun tema(claro: Boolean)
+    suspend fun mostrarCompletados(mostrar: Boolean)
+    suspend fun ordenar(orden: Orden)
+    fun solicitarSincronizacion()
 }
