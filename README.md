@@ -4,20 +4,30 @@ Aplicación Android de Lucas Agustin Aguirre Gonzalez para Programación Mobile.
 
 ## Ejecutar en el emulador
 
-1. Descomprimir el proyecto. Abrir en Android Studio la carpeta que contiene `settings.gradle.kts`. Usar el JBR del IDE para Gradle, instalar Android SDK Platform 37 y arrancar un emulador. Se usó Medium Phone con Android 17 (API 37.2).
-2. Desde esa carpeta, levantar el servidor de prueba con Python 3. Usa SQLite y la biblioteca estándar. Dejar esa terminal abierta.
+1. Descomprimir el ZIP y localizar la carpeta que contiene `settings.gradle.kts`. Se necesita Android Studio con Android SDK Platform 37, un emulador iniciado y Python 3. Para crear el emulador desde Android Studio, abrir **Tools > Device Manager**. La prueba se hizo con un Medium Phone con Android 17.
+2. Abrir una terminal en la carpeta descomprimida y ejecutar el servidor. Usa SQLite, incluido en Python. Dejar la terminal abierta. Al visitar `http://127.0.0.1:8765/recordatorios` en la PC, una base nueva devuelve `[]`.
 
    ```powershell
    python servidor/servidor.py
    ```
 
-3. Ejecutar el módulo `app` en Android Studio. En Android 17, tocar **Autorizar** en el listado y permitir el acceso a dispositivos cercanos para sincronizar con la PC. Si se deniega el permiso, la app sigue guardando los cambios en Room. En una instalación nueva tanto el listado local como el servidor empiezan vacíos. Para compilar e instalar desde PowerShell, con `JAVA_HOME` apuntando al JBR y `ANDROID_HOME` al SDK:
+3. Instalar y abrir la app por una de estas vías.
+
+   **Android Studio.** Abrir la carpeta que contiene `settings.gradle.kts`. Al abrir por primera vez una copia descargada, el IDE puede mostrar **Trust Project**. Revisar que la ruta corresponda al proyecto extraído. Esperar la sincronización de Gradle, seleccionar el emulador y ejecutar el módulo `app` con ▶. Para Gradle se usó el entorno Java incluido con el IDE.
+
+   **PowerShell en Windows.** Abrir una segunda terminal en la misma carpeta. Estos comandos usan las rutas habituales de Android Studio y del SDK. Si el SDK se instaló en otra carpeta, usar la que figura en **SDK Manager > Android SDK Location**.
 
    ```powershell
+   $env:JAVA_HOME = "$env:ProgramFiles\Android\Android Studio\jbr"
+   $env:ANDROID_HOME = "$env:LOCALAPPDATA\Android\Sdk"
+   $env:Path = "$env:ANDROID_HOME\platform-tools;$env:Path"
    .\gradlew.bat assembleDebug installDebug
+   adb shell am start -n com.example.primeraclaseprogramacionmobile/.MainActivity
    ```
 
-El APK queda en `app/build/outputs/apk/debug/app-debug.apk`. La primera compilación descarga las dependencias. En macOS y Linux usar `./gradlew`.
+4. En Android 17, tocar **Autorizar** y aceptar el permiso para dispositivos cercanos. Si después aparece **Sin conexión con el servidor**, dejar el servidor encendido y tocar **Reintentar**. El listado muestra **Cambios sincronizados** cuando el teléfono se comunica con la PC. En una primera instalación el listado está vacío.
+
+El APK queda en `app/build/outputs/apk/debug/app-debug.apk`. La primera compilación descarga Gradle y las dependencias. En macOS y Linux usar `./gradlew`.
 
 El emulador accede a la PC en `http://10.0.2.2:8765/`. El archivo `gradle.properties.example` muestra la propiedad para cambiar la dirección. Para probar otro puerto, arrancar el servidor con `--puerto 8766` y compilar con `"-PrecordatoriosUrl=http://10.0.2.2:8766/"`. En un dispositivo físico se puede usar `adb reverse tcp:8765 tcp:8765` y `"-PrecordatoriosUrl=http://127.0.0.1:8765/"`. Se admite HTTPS para otros servidores. El servidor de práctica escucha solo en la PC y conserva los datos en `recordatorios.sqlite3`; el parámetro `--archivo` permite elegir otra base.
 
