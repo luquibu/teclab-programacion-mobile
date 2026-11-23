@@ -22,7 +22,7 @@ private val EsquemaOscuro = darkColorScheme(
     onSurfaceVariant = ColoresRecordatorios.TextoSecundario,
     outline = ColoresRecordatorios.Borde,
     error = ColoresRecordatorios.Error,
-    onError = ColoresRecordatorios.Texto,
+    onError = ColoresRecordatorios.Fondo,
 )
 
 @Composable

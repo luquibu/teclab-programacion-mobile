@@ -10,10 +10,13 @@ data class RecordatorioDto(
 )
 
 interface ServicioRecordatorios {
+    /** Devuelve la colección completa de la cuenta, confirmada por el servidor, o falla.
+     * El repositorio interpreta cada ID ausente como una baja remota. */
     suspend fun listar(): List<RecordatorioDto>
     suspend fun guardar(id: Long, registro: RecordatorioDto): RecordatorioDto
     suspend fun eliminar(id: Long)
 }
 
 class SolicitudRechazada : IOException()
+class SesionNoAutenticada : IOException()
 class ServicioNoDisponible : IOException()

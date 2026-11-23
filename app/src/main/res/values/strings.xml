@@ -68,6 +68,7 @@
     <string name="auth_weak">Elegí una contraseña de al menos seis caracteres.</string>
     <string name="auth_used">Ese correo ya tiene una cuenta.</string>
     <string name="auth_failed">No se pudo ingresar. Revisá el correo y la contraseña.</string>
+    <string name="auth_wait">Hubo demasiados intentos. Esperá unos minutos y volvé a intentar.</string>
     <string name="auth_new">Crear cuenta</string>
     <string name="auth_login">Iniciar sesión</string>
     <string name="auth_email">Correo electrónico</string>
@@ -78,5 +79,6 @@
     <string name="auth_existing">Ya tengo una cuenta</string>
     <string name="auth_create">Crear una cuenta</string>
     <string name="auth_logout">Cerrar sesión</string>
-    <string name="auth_emulator">Conectar al emulador de Firebase</string>
+    <string name="auth_emulator">Para ingresar o crear una cuenta en el emulador de Firebase, permití el acceso a la red local.</string>
+    <string name="open_app_settings">Abrir ajustes del sistema</string>
 </resources>

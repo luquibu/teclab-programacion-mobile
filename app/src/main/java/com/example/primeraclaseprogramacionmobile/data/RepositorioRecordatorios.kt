@@ -20,4 +20,6 @@ interface RepositorioRecordatorios {
     suspend fun mostrarCompletados(mostrar: Boolean)
     suspend fun ordenar(orden: Orden)
     fun solicitarSincronizacion()
+    /** Comprueba la sesión antes de sincronizar al abrir la app o recuperar la red. */
+    fun solicitarComprobacion()
 }

@@ -65,7 +65,7 @@ fun PantallaRecordatorios(
     onCrear: () -> Unit,
     onSeleccionar: (Long) -> Unit,
     onReintentar: () -> Unit,
-    red: Sincronizacion, onSincronizar: () -> Unit, onAjustes: () -> Unit,
+    red: Sincronizacion, @StringRes accionPermiso: Int?, onSincronizar: () -> Unit, onAjustes: () -> Unit,
 ) {
     Scaffold(
         topBar = { BarraPantalla(stringResource(R.string.app_name)) {
@@ -75,7 +75,7 @@ fun PantallaRecordatorios(
             Row(Modifier.fillMaxWidth().navigationBarsPadding().padding(horizontal = 16.dp), verticalAlignment = Alignment.CenterVertically) {
                 Text(stringResource(mensajeRed(red)), Modifier.weight(1f), style = MaterialTheme.typography.bodySmall)
                 TextButton(onSincronizar, enabled = red != Sincronizacion.EnCurso) {
-                    Text(stringResource(when (red) { Sincronizacion.FaltaPermiso -> R.string.allow_network; Sincronizacion.AlDia -> R.string.sync_now; else -> R.string.retry }))
+                    Text(stringResource(accionPermiso ?: if (red == Sincronizacion.AlDia) R.string.sync_now else R.string.retry))
                 }
             }
         } },

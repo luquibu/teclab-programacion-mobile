@@ -31,8 +31,8 @@ class AplicacionMobile : Application(), FuenteRecordatorios {
         val base = Room.databaseBuilder(this, BaseRecordatorios::class.java, "recordatorios.db")
             .addMigrations(migracionDeApi3).build()
         val preferencias = PreferenciasLocales(almacenPreferencias)
-        SesionesFirebase(auth) { uid, alcance ->
-            RepositorioLocal(uid, base, preferencias, FirestoreRecordatorios(nube, uid) { sesiones.comprobar() }, alcance) {
+        SesionesFirebase(auth) { uid, alcance, renovar ->
+            RepositorioLocal(uid, base, preferencias, FirestoreRecordatorios(nube, uid), alcance, renovar) {
                 usaEmuladoresFirebase && !permisoRedConcedido()
             }
         }

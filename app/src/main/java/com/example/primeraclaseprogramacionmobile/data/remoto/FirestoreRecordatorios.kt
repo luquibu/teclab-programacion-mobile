@@ -7,9 +7,7 @@ import java.io.IOException
 import java.io.InterruptedIOException
 import kotlinx.coroutines.tasks.await
 
-class FirestoreRecordatorios(private val firestore: FirebaseFirestore, uid: String,
-    private val verificarSesion: () -> Unit,
-) : ServicioRecordatorios {
+class FirestoreRecordatorios(private val firestore: FirebaseFirestore, uid: String) : ServicioRecordatorios {
     private val coleccion = firestore.collection("users").document(uid).collection("reminders")
 
     override suspend fun listar() = operacion {
@@ -36,7 +34,7 @@ class FirestoreRecordatorios(private val firestore: FirebaseFirestore, uid: Stri
         accion()
     } catch (e: FirebaseFirestoreException) {
         throw when (e.code) {
-            FirebaseFirestoreException.Code.UNAUTHENTICATED -> { verificarSesion(); SolicitudRechazada() }
+            FirebaseFirestoreException.Code.UNAUTHENTICATED -> SesionNoAutenticada()
             FirebaseFirestoreException.Code.PERMISSION_DENIED,
             FirebaseFirestoreException.Code.INVALID_ARGUMENT -> SolicitudRechazada()
             FirebaseFirestoreException.Code.DEADLINE_EXCEEDED -> InterruptedIOException()
@@ -47,9 +45,11 @@ class FirestoreRecordatorios(private val firestore: FirebaseFirestore, uid: Stri
 }
 
 internal fun registroDesdeFirestore(id: String, campos: Map<String, Any?>): RecordatorioDto {
+    val numero = id.toLong()
+    require(numero > 0 && numero.toString() == id) { "ID de recordatorio inválido" }
     fun texto(campo: String) = requireNotNull(campos[campo] as? String) { campo }
     val descripcion = campos["descripcion"]
     require(descripcion == null || descripcion is String)
-    return RecordatorioDto(id.toLong(), texto("titulo"), descripcion as? String,
+    return RecordatorioDto(numero, texto("titulo"), descripcion as? String,
         texto("categoria"), texto("prioridad"), texto("estado"), requireNotNull(campos["fecha"] as? Long))
 }

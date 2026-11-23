@@ -11,7 +11,7 @@ object ColoresRecordatorios {
     val TextoSecundario = Color(0xFF9AA0AD)
     val Borde = Color(0xFF2A2E38)
     val Primario = Color(0xFFA78BFA)
-    val Error = Color(0xFFDC2626)
+    val Error = Color(0xFFF87171)
     val Completado = Color(0xFF10B981)
     val Seleccion = Color(0xFF3A72E8)
     val IdentidadEstudio = Color(0xFF9AA9C2)

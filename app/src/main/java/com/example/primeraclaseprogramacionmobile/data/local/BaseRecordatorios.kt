@@ -35,6 +35,9 @@ interface RecordatorioDao {
     @Query("SELECT * FROM recordatorios WHERE uid = :uid AND pendiente = 1 ORDER BY fecha, id")
     suspend fun pendientes(uid: String): List<FilaRecordatorio>
 
+    @Query("SELECT EXISTS(SELECT 1 FROM recordatorios WHERE uid = :uid AND pendiente = 1)")
+    suspend fun hayPendientes(uid: String): Boolean
+
     @Query("SELECT * FROM recordatorios WHERE uid = :uid AND pendiente = 0")
     suspend fun confirmados(uid: String): List<FilaRecordatorio>
 

@@ -18,8 +18,12 @@ import kotlinx.serialization.Serializable
 @Serializable @SerialName("ajustes") private data object Ajustes
 
 @Composable
-fun Navegacion(repositorio: RepositorioRecordatorios, correo: String, cerrarSesion: () -> Unit, pedirPermiso: () -> Unit) {
+fun Navegacion(
+    repositorio: RepositorioRecordatorios, correo: String, cerrarSesion: () -> Unit,
+    accionPermiso: Int?, pedirPermiso: () -> Unit,
+) {
     val nav = rememberNavController()
+    val accionPermisoActual by rememberUpdatedState(accionPermiso)
     val volver: () -> Unit = { nav.popBackStack() }
     NavHost(nav, startDestination = Listado) {
         composable<Listado> {
@@ -29,7 +33,9 @@ fun Navegacion(repositorio: RepositorioRecordatorios, correo: String, cerrarSesi
             PantallaRecordatorios(estado, vm::prioridad, vm::estado,
                 onCrear = { nav.navigate(Crear) { launchSingleTop = true } },
                 onSeleccionar = { id -> nav.navigate(Detalle(id)) { launchSingleTop = true } },
-                onReintentar = vm::cargar, red = red, onSincronizar = { if (red == Sincronizacion.FaltaPermiso) pedirPermiso() else vm.sincronizar() },
+                onReintentar = vm::cargar, red = if (accionPermisoActual != null) Sincronizacion.FaltaPermiso else red,
+                accionPermiso = accionPermisoActual,
+                onSincronizar = { if (accionPermisoActual != null) pedirPermiso() else vm.sincronizar() },
                 onAjustes = { nav.navigate(Ajustes) { launchSingleTop = true } })
         }
         composable<Crear> { Formulario(repositorio, null, volver) }
