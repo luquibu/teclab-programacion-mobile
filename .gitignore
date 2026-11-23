@@ -5,6 +5,8 @@
 **/build/
 *.jks
 *.keystore
+*.p12
+*.dpapi
 /local.properties
 /.idea/caches
 /.idea/libraries
@@ -21,3 +23,5 @@ local.properties
 *.sqlite3
 *.sqlite3-*
 __pycache__/
+*-debug.log
+.firebase/

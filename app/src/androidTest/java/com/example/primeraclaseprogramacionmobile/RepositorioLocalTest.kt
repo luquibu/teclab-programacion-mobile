@@ -26,7 +26,7 @@ class RepositorioLocalTest {
     @Before fun iniciar() {
         base = Room.inMemoryDatabaseBuilder(appPrueba, BaseRecordatorios::class.java).build()
         servidor = MockWebServer().apply { start() }
-        repo = RepositorioLocal(base, PreferenciasLocales(appPrueba.ajustesPrueba),
+        repo = RepositorioLocal("cuenta-prueba", base, PreferenciasLocales(appPrueba.ajustesPrueba),
             servicioRecordatorios(servidor.url("/").toString(), 600), inactivo)
     }
 
@@ -71,7 +71,7 @@ class RepositorioLocalTest {
     }
 
     @Test fun crudSinServidorYBajaConfirmadaAlReconectar() = runBlocking {
-        val local = RepositorioLocal(base, PreferenciasLocales(appPrueba.ajustesPrueba),
+        val local = RepositorioLocal("cuenta-prueba", base, PreferenciasLocales(appPrueba.ajustesPrueba),
             servicioRecordatorios("http://127.0.0.1:1/", 400), inactivo)
         local.guardar(nuevo)
         val id = local.registros().first().single().id
@@ -81,12 +81,12 @@ class RepositorioLocalTest {
         assertEquals("Repasar Retrofit", local.registros(EstadoRecordatorio.Completado).first().single().titulo)
         local.eliminar(id)
         assertNull(local.observar(id).first())
-        assertTrue(base.recordatorios().buscar(id)!!.borrado)
+        assertTrue(base.recordatorios().buscar("cuenta-prueba", id)!!.borrado)
         servidor.enqueue(MockResponse().setResponseCode(204))
         servidor.enqueue(json("[]"))
         repo.sincronizar()
         assertEquals("DELETE", servidor.takeRequest().method)
-        assertNull(base.recordatorios().buscar(id))
+        assertNull(base.recordatorios().buscar("cuenta-prueba", id))
     }
 
     @Test fun edicionMientrasSeEnviaNoSePierde() = runBlocking {
@@ -114,13 +114,13 @@ class RepositorioLocalTest {
 
     @Test fun sinPermisoLocalConservaLaColaYReanudaAlAutorizar() = runBlocking {
         var faltaPermiso = true
-        val restringido = RepositorioLocal(base, PreferenciasLocales(appPrueba.ajustesPrueba),
+        val restringido = RepositorioLocal("cuenta-prueba", base, PreferenciasLocales(appPrueba.ajustesPrueba),
             servicioRecordatorios(servidor.url("/").toString()), inactivo) { faltaPermiso }
         restringido.guardar(nuevo)
         restringido.sincronizar()
         assertEquals(Sincronizacion.FaltaPermiso, restringido.sincronizacion.value)
         assertEquals(0, servidor.requestCount)
-        val fila = base.recordatorios().pendientes().single()
+        val fila = base.recordatorios().pendientes("cuenta-prueba").single()
         val dato = kotlinx.serialization.json.Json.encodeToString(com.example.primeraclaseprogramacionmobile.data.remoto.RecordatorioDto.serializer(), fila.dto())
         servidor.enqueue(json(dato)); servidor.enqueue(json("[" + dato + "]"))
         faltaPermiso = false
@@ -147,7 +147,7 @@ class RepositorioLocalTest {
         servidor.enqueue(MockResponse().setResponseCode(204))
         repo.sincronizar()
         assertFalse(repo.registros().first().single().sincronizado)
-        val fila = base.recordatorios().pendientes().single()
+        val fila = base.recordatorios().pendientes("cuenta-prueba").single()
         val dato = kotlinx.serialization.json.Json.encodeToString(com.example.primeraclaseprogramacionmobile.data.remoto.RecordatorioDto.serializer(), fila.dto())
         servidor.enqueue(json(dato)); servidor.enqueue(json("[" + dato + "]"))
         repo.sincronizar()

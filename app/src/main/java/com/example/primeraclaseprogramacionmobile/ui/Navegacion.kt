@@ -18,7 +18,7 @@ import kotlinx.serialization.Serializable
 @Serializable @SerialName("ajustes") private data object Ajustes
 
 @Composable
-fun Navegacion(repositorio: RepositorioRecordatorios, pedirPermiso: () -> Unit) {
+fun Navegacion(repositorio: RepositorioRecordatorios, correo: String, cerrarSesion: () -> Unit, pedirPermiso: () -> Unit) {
     val nav = rememberNavController()
     val volver: () -> Unit = { nav.popBackStack() }
     NavHost(nav, startDestination = Listado) {
@@ -45,7 +45,7 @@ fun Navegacion(repositorio: RepositorioRecordatorios, pedirPermiso: () -> Unit) 
             val vm = viewModel { PreferenciasViewModel(repositorio) }
             val ajustes by vm.valores.collectAsStateWithLifecycle()
             val error by vm.error.collectAsStateWithLifecycle()
-            PantallaPreferencias(ajustes, error, vm::tema, vm::completados, vm::orden, volver)
+            PantallaPreferencias(ajustes, error, vm::tema, vm::completados, vm::orden, volver, correo, cerrarSesion)
         }
     }
 }

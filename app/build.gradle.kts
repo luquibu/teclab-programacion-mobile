@@ -1,16 +1,13 @@
-import java.net.URI
-
 plugins {
+    id("com.google.gms.google-services") version "4.4.4"
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.ksp)
 }
 
-val servidor = providers.gradleProperty("recordatoriosUrl").orElse("http://10.0.2.2:8765/").get()
-val uriServidor = URI(servidor)
-require(uriServidor.scheme in setOf("http", "https") && uriServidor.host != null && uriServidor.userInfo == null &&
-    uriServidor.query == null && uriServidor.fragment == null && servidor.endsWith("/")) { "Revisá recordatoriosUrl." }
+val signingStore = providers.environmentVariable("TECLAB_STORE_FILE")
+val signingPassword = providers.environmentVariable("TECLAB_STORE_PASSWORD")
 
 android {
     namespace = "com.example.primeraclaseprogramacionmobile"
@@ -22,15 +19,27 @@ android {
         applicationId = "com.example.primeraclaseprogramacionmobile"
         minSdk = 24
         targetSdk = 37
-        versionCode = 3
-        versionName = "3.0"
-        buildConfigField("String", "URL_SERVICIO", "\"$servidor\"")
+        versionCode = 4
+        versionName = "4.0-rc1"
 
         testInstrumentationRunner = "com.example.primeraclaseprogramacionmobile.RunnerMobile"
     }
 
+    signingConfigs {
+        if (signingStore.isPresent && signingPassword.isPresent) {
+            create("teclab") {
+                storeFile = file(signingStore.get())
+                storePassword = signingPassword.get()
+                keyAlias = "teclab-mobile"
+                keyPassword = signingPassword.get()
+            }
+        }
+    }
+
     buildTypes {
+        debug { applicationIdSuffix = ".debug" }
         release {
+            signingConfig = signingConfigs.findByName("teclab")
             optimization {
                 enable = false
             }
@@ -49,13 +58,20 @@ android {
 ksp { arg("room.schemaLocation", file("schemas").absolutePath) }
 
 dependencies {
+    constraints {
+        implementation("androidx.fragment:fragment:1.8.9") { because("Activity Result necesita una versión compatible del fragmento usado por Firebase Auth") }
+    }
+    implementation(platform("com.google.firebase:firebase-bom:34.7.0"))
+    implementation("com.google.firebase:firebase-auth")
+    implementation("com.google.firebase:firebase-firestore")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.10.2")
     implementation(libs.room.runtime)
     ksp(libs.room.compiler)
     implementation(libs.datastore)
-    implementation(libs.retrofit)
-    implementation(libs.converter.json)
+    androidTestImplementation(libs.retrofit)
+    androidTestImplementation(libs.converter.json)
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.8.1")
-    implementation(libs.okhttp)
+    androidTestImplementation(libs.okhttp)
     androidTestImplementation(libs.mockwebserver)
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.activity.compose)
@@ -75,4 +91,17 @@ dependencies {
     androidTestImplementation(libs.androidx.junit)
     debugImplementation(libs.androidx.compose.ui.test.manifest)
     debugImplementation(libs.androidx.compose.ui.tooling)
+}
+
+val firmaConfigurada = signingStore.isPresent && signingPassword.isPresent
+val validarFirmaTeclab = tasks.register("validarFirmaTeclab") {
+    inputs.property("configurada", firmaConfigurada)
+    doLast {
+        check(inputs.properties["configurada"] == true) {
+            "Para empaquetar release, configurá TECLAB_STORE_FILE y TECLAB_STORE_PASSWORD."
+        }
+    }
+}
+tasks.matching { it.name in setOf("packageRelease", "packageReleaseBundle", "signReleaseBundle") }.configureEach {
+    dependsOn(validarFirmaTeclab)
 }

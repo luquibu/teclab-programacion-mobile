@@ -6,24 +6,44 @@ import android.net.Network
 import androidx.room.Room
 import com.example.primeraclaseprogramacionmobile.data.*
 import com.example.primeraclaseprogramacionmobile.data.local.*
-import com.example.primeraclaseprogramacionmobile.data.remoto.servicioRecordatorios
-import kotlinx.coroutines.*
+import com.example.primeraclaseprogramacionmobile.data.remoto.FirestoreRecordatorios
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.FirebaseFirestoreSettings
+import com.google.firebase.firestore.MemoryCacheSettings
 
-interface FuenteRecordatorios { val repositorio: RepositorioRecordatorios }
+interface FuenteRecordatorios {
+    val sesiones: Sesiones
+    val usaEmuladoresFirebase: Boolean
+}
 
 class AplicacionMobile : Application(), FuenteRecordatorios {
-    override val repositorio by lazy {
-        RepositorioLocal(Room.databaseBuilder(this, BaseRecordatorios::class.java, "recordatorios.db").build(),
-            PreferenciasLocales(almacenPreferencias), servicioRecordatorios(BuildConfig.URL_SERVICIO),
-            CoroutineScope(SupervisorJob() + Dispatchers.IO), this::faltaPermisoRedLocal)
+    override val usaEmuladoresFirebase = BuildConfig.DEBUG
+    override val sesiones: Sesiones by lazy {
+        val auth = FirebaseAuth.getInstance()
+        val nube = FirebaseFirestore.getInstance()
+        nube.firestoreSettings = FirebaseFirestoreSettings.Builder()
+            .setLocalCacheSettings(MemoryCacheSettings.newBuilder().build()).build()
+        if (usaEmuladoresFirebase) {
+            auth.useEmulator("10.0.2.2", 9099)
+            nube.useEmulator("10.0.2.2", 8184)
+        }
+        val base = Room.databaseBuilder(this, BaseRecordatorios::class.java, "recordatorios.db")
+            .addMigrations(migracionDeApi3).build()
+        val preferencias = PreferenciasLocales(almacenPreferencias)
+        SesionesFirebase(auth) { uid, alcance ->
+            RepositorioLocal(uid, base, preferencias, FirestoreRecordatorios(nube, uid) { sesiones.comprobar() }, alcance) {
+                usaEmuladoresFirebase && !permisoRedConcedido()
+            }
+        }
     }
 
     override fun onCreate() {
         super.onCreate()
-        repositorio.solicitarSincronizacion()
+        val cuentas = sesiones
         getSystemService(ConnectivityManager::class.java).registerDefaultNetworkCallback(
             object : ConnectivityManager.NetworkCallback() {
-                override fun onAvailable(network: Network) { repositorio.solicitarSincronizacion() }
+                override fun onAvailable(network: Network) { cuentas.comprobar() }
             },
         )
     }

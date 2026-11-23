@@ -1,0 +1,22 @@
+{
+  "project_info": {
+    "project_number": "100000000004",
+    "project_id": "demo-teclab-api4"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:100000000004:android:0000000000000004",
+        "android_client_info": {
+          "package_name": "com.example.primeraclaseprogramacionmobile.debug"
+        }
+      },
+      "api_key": [
+        {
+          "current_key": "AIzaSyDemoOnlyEmulatorProject00000000004"
+        }
+      ]
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -23,10 +23,20 @@ class RunnerMobile : AndroidJUnitRunner() {
 
 class AplicacionPrueba : Application(), FuenteRecordatorios {
     val base by lazy { Room.inMemoryDatabaseBuilder(this, BaseRecordatorios::class.java).build() }
-    private val local by lazy { RepositorioLocal(base, PreferenciasLocales(ajustesPrueba),
+    private val local by lazy { RepositorioLocal("cuenta-prueba", base, PreferenciasLocales(ajustesPrueba),
         servicioRecordatorios("http://127.0.0.1:1/"), CoroutineScope(Job().apply { cancel() })) }
+    override val usaEmuladoresFirebase = false
+    override val sesiones by lazy {
+        object : Sesiones {
+            override val activa = kotlinx.coroutines.flow.MutableStateFlow<CuentaActiva?>(
+                CuentaActiva("cuenta-prueba", "prueba@example.test", repositorio))
+            override suspend fun autenticar(correo: String, clave: String, registrar: Boolean) = Unit
+            override fun cerrar() = Unit
+            override fun comprobar() = Unit
+        }
+    }
     var fallaGuardado = false
-    override val repositorio: RepositorioRecordatorios by lazy {
+    val repositorio: RepositorioRecordatorios by lazy {
         object : RepositorioRecordatorios by local {
             override suspend fun guardar(borrador: Borrador) {
                 delay(350)
@@ -45,6 +55,6 @@ internal fun prepararEjemplos(conDatos: Boolean = true) = runBlocking {
     app.base.clearAllTables()
     app.ajustesPrueba.edit { it.clear() }
     if (conDatos) for (r in DatosRecordatorios.recordatorios) {
-        app.base.recordatorios().insertar(r.copy(fecha = 10 - r.id).fila())
+        app.base.recordatorios().insertar(r.copy(fecha = 10 - r.id).fila("cuenta-prueba"))
     }
 }

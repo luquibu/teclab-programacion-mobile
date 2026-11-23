@@ -1,56 +1,37 @@
 # Mis recordatorios
 
-Aplicación Android de Lucas Agustin Aguirre Gonzalez para Programación Mobile. En la actividad 3 los recordatorios se guardan en el teléfono. Se pueden crear, consultar, editar y eliminar sin conexión. En Ajustes se eligen el tema, el orden y la visibilidad de los completados.
+Proyecto de Lucas Agustin Aguirre Gonzalez para la Actividad Práctica Integradora 4 de Programación Mobile. La versión **4.0-rc1** (código 4) guarda los recordatorios en el teléfono y los sincroniza entre dispositivos de la misma cuenta.
 
-## Ejecutar en el emulador
+## Probar el APK de la entrega
 
-1. Descomprimir el ZIP y localizar la carpeta que contiene `settings.gradle.kts`. Se necesita Android Studio con Android SDK Platform 37, un emulador iniciado y Python 3. Para crear el emulador desde Android Studio, abrir **Tools > Device Manager**. La prueba se hizo con un Medium Phone con Android 17.
-2. Abrir una terminal en la carpeta descomprimida y ejecutar el servidor. Usa SQLite, incluido en Python. Dejar la terminal abierta. Al visitar `http://127.0.0.1:8765/recordatorios` en la PC, una base nueva devuelve `[]`.
+1. Usá un teléfono o emulador con Android 7 o superior y conexión a Internet. Si ya tenés instalada una compilación de desarrollo con otra firma, elegí otro emulador para conservar esa instalación.
+2. Instalá el APK adjunto a Canvas. Desde una PC con Android SDK Platform Tools también se puede usar `adb -s SERIAL install archivo.apk`. El archivo AAB se entrega para distribución. Para esta prueba instalá el APK.
+3. Abrí **Mis recordatorios → Crear una cuenta**. Registrá un correo que controles y una contraseña de al menos seis caracteres. Para una cuenta que ya existe, elegí **Ingresar**.
+4. Tocá **Crear recordatorio**, completá título, categoría y prioridad y guardá. Esperá **Cambios sincronizados**. Instalá el mismo APK en un segundo dispositivo, ingresá con la misma cuenta y abrí el recordatorio.
+5. En el primer dispositivo, activá el modo avión, editá el título y guardá. El detalle indica que el cambio está pendiente. Podés cerrar la app y volver a abrirla. Al recuperar la red, la app envía el cambio al mismo documento. En el segundo dispositivo, tocá **Sincronizar** para actualizar su copia.
+6. En **Ajustes → Cerrar sesión** podés cambiar de cuenta. Un usuario nuevo empieza con su propio listado. Si la cuenta anterior dejó cambios pendientes, se conservan en el dispositivo y se envían cuando esa cuenta vuelve a ingresar con conexión.
 
-   ```powershell
-   python servidor/servidor.py
-   ```
+La versión firmada usa Firebase Authentication y Cloud Firestore en el proyecto académico `teclab-mis-recordatorios` (Spark, São Paulo). El docente puede usar el APK por Internet sin arrancar servicios en su PC.
 
-3. Instalar y abrir la app por una de estas vías.
+## Datos y sesiones
 
-   **Android Studio.** Abrir la carpeta que contiene `settings.gradle.kts`. Al abrir por primera vez una copia descargada, el IDE puede mostrar **Trust Project**. Revisar que la ruta corresponda al proyecto extraído. Esperar la sincronización de Gradle, seleccionar el emulador y ejecutar el módulo `app` con ▶. Para Gradle se usó el entorno Java incluido con el IDE.
+La pantalla observa un ViewModel. El repositorio de la cuenta escribe en Room, envía los cambios a Firestore y actualiza Room después de la confirmación. El listado y el detalle leen Room. Una transacción de Firestore requiere conexión y usa siempre el mismo ID. Si una edición local cambia durante el envío, su revisión más reciente sigue pendiente. Cuando dos equipos editan el mismo registro, prevalece la última escritura confirmada por el servidor.
 
-   **PowerShell en Windows.** Abrir una segunda terminal en la misma carpeta. Estos comandos usan las rutas habituales de Android Studio y del SDK. Si el SDK se instaló en otra carpeta, usar la que figura en **SDK Manager > Android SDK Location**.
+Room identifica cada fila por cuenta e ID. La migración desde API3 conserva las filas anteriores sin asignarles propietario. La app no las muestra ni las sube. En Firestore, las reglas de `users/{uid}/reminders/{id}` exigen que el UID coincida con el usuario autenticado. Authentication gestiona las credenciales. DataStore conserva las preferencias de presentación del dispositivo. La app excluye su base y sus datos de las copias de seguridad.
 
-   ```powershell
-   $env:JAVA_HOME = "$env:ProgramFiles\Android\Android Studio\jbr"
-   $env:ANDROID_HOME = "$env:LOCALAPPDATA\Android\Sdk"
-   $env:Path = "$env:ANDROID_HOME\platform-tools;$env:Path"
-   .\gradlew.bat assembleDebug installDebug
-   adb shell am start -n com.example.primeraclaseprogramacionmobile/.MainActivity
-   ```
+## Abrir y compilar el proyecto
 
-4. En Android 17, tocar **Autorizar** y aceptar el permiso para dispositivos cercanos. Si después aparece **Sin conexión con el servidor**, dejar el servidor encendido y tocar **Reintentar**. El listado muestra **Cambios sincronizados** cuando el teléfono se comunica con la PC. En una primera instalación el listado está vacío.
+Extraé el ZIP, abrí en Android Studio la carpeta con `settings.gradle.kts` y sincronizá Gradle. Se necesita SDK Platform 37 y el JBR incluido en Android Studio. Para compilar desde PowerShell en Windows:
 
-El APK queda en `app/build/outputs/apk/debug/app-debug.apk`. La primera compilación descarga Gradle y las dependencias. En macOS y Linux usar `./gradlew`.
+```powershell
+$env:JAVA_HOME = "$env:ProgramFiles\Android\Android Studio\jbr"
+$env:ANDROID_HOME = "$env:LOCALAPPDATA\Android\Sdk"
+$env:Path = "$env:JAVA_HOME\bin;$env:ANDROID_HOME\platform-tools;$env:Path"
+.\gradlew.bat assembleDebug testDebugUnitTest lintDebug
+```
 
-El emulador accede a la PC en `http://10.0.2.2:8765/`. El archivo `gradle.properties.example` muestra la propiedad para cambiar la dirección. Para probar otro puerto, arrancar el servidor con `--puerto 8766` y compilar con `"-PrecordatoriosUrl=http://10.0.2.2:8766/"`. En un dispositivo físico se puede usar `adb reverse tcp:8765 tcp:8765` y `"-PrecordatoriosUrl=http://127.0.0.1:8765/"`. Se admite HTTPS para otros servidores. El servidor de práctica escucha solo en la PC y conserva los datos en `recordatorios.sqlite3`; el parámetro `--archivo` permite elegir otra base.
+**Desarrollo local.** Usá Node 22 o superior y el JBR del IDE. En la raíz arrancá `npx --yes firebase-tools@15.37.0 emulators:start --only auth,firestore --project demo-teclab-api4` y dejá esa terminal abierta. La variante debug se comunica desde el emulador Android con Authentication (9099) y Firestore (8184) de la PC. En Android 17 concedé el acceso a la red local cuando lo pida. Para instalar en un emulador, usá `.\gradlew.bat installDebug`. En otra terminal, `python -m unittest discover -s pruebas` verifica las reglas con dos cuentas del emulador. Con un emulador Android iniciado, `.\gradlew.bat connectedDebugAndroidTest` ejecuta las pruebas de interfaz, repositorio y migración.
 
-## Datos y sincronización
+**Versión firmada.** La configuración pública del cliente está en `app/src/release/google-services.json`. Para compilar con tu propia firma, configurá `TECLAB_STORE_FILE` con la ruta al almacén PKCS12 y `TECLAB_STORE_PASSWORD` con su contraseña en el entorno local. El alias es `teclab-mobile`, con la misma contraseña que el almacén. Ejecutá `.\gradlew.bat --no-configuration-cache assembleRelease bundleRelease`. La clave privada original se conserva fuera del proyecto. Los resultados aparecen en `app/build/outputs/apk/release/` y `app/build/outputs/bundle/release/`.
 
-- **Room** guarda título, descripción, categoría, prioridad, estado, fecha de creación e ID. El listado y el detalle observan las consultas mediante Flow. Los filtros por estado y prioridad pueden combinarse.
-- **Preferences DataStore** guarda tres ajustes. Al instalar se usa el tema oscuro, se muestran los completados y el orden comienza por el más reciente. Un orden desconocido usa ese mismo criterio.
-- **RepositorioLocal** escribe primero en Room. Una alta o edición queda pendiente hasta que el servidor confirma el mismo ID. Al eliminar, el registro desaparece del listado y se conserva una marca de baja hasta recibir la confirmación.
-- **Retrofit y OkHttp** envían `PUT /recordatorios/{id}` o `DELETE /recordatorios/{id}`. Después, `GET /recordatorios` devuelve la colección completa. Los datos válidos se incorporan a Room sin pisar cambios locales pendientes. Una revisión por fila protege las ediciones que ocurren mientras se envía una versión anterior.
-- Un solo proceso de sincronización atiende el inicio de la app, los cambios locales, la recuperación de la red y los reintentos manuales. Si el servidor recibió una escritura pero se perdió la respuesta, el reintento usa el mismo ID. La cola sobrevive al cierre de la aplicación. La sincronización se reanuda al abrirla o al recuperar conexión mientras está en ejecución.
-
-## Comprobar el recorrido
-
-1. Con un servidor de prueba propio, detener el servidor con Ctrl+C, crear un recordatorio y abrir su detalle. Aparece **Pendiente de sincronizar**. Se puede editar o eliminar sin red.
-2. Cambiar los tres ajustes y cerrar por completo la app. En el emulador se puede usar `adb shell am force-stop com.example.primeraclaseprogramacionmobile`. Volver a abrirla y comprobar el listado y los ajustes.
-3. Iniciar el servidor de nuevo con el mismo archivo de datos. Tocar **Reintentar** si la red del emulador siguió activa. Al recuperar conectividad con la app en ejecución se reintenta automáticamente. Comprobar **Sincronizado** en el detalle y consultar `http://127.0.0.1:8765/recordatorios` en la PC.
-4. Ejecutar las verificaciones con el emulador conectado:
-
-   ```powershell
-   .\gradlew.bat assembleDebug testDebugUnitTest lintDebug connectedDebugAndroidTest
-   python -m unittest discover -s servidor
-   ```
-
-La prueba de Python comprueba que el servidor confirma un guardado y devuelve el mismo registro en la consulta siguiente. Las pruebas instrumentadas usan una base aislada y un servidor HTTP controlado. Ejercitan el recorrido de las pantallas, el CRUD, la respuesta perdida después de una escritura, una edición durante el envío, códigos 400 y 503, tiempo de espera agotado y el rechazo de una respuesta inválida.
-
-[Consigna de API3](https://teclab.instructure.com/courses/3864/files/1354757?wrap=1) | [Versión de API2](https://github.com/luquibu/teclab-programacion-mobile/tree/3c429498c31cf4d3b3806a9e4c34498c61e000cc)
+[Consigna de API4](https://teclab.instructure.com/courses/3864/files/1354762?wrap=1) · [Versión anterior, API3](https://github.com/luquibu/teclab-programacion-mobile/tree/3095150b794239c558a4a7f56be7ca004061ee7f)

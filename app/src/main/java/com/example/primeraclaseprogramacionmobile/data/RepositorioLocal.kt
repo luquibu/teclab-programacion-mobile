@@ -15,9 +15,11 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.serialization.SerializationException
-import retrofit2.HttpException
+import com.example.primeraclaseprogramacionmobile.data.remoto.SolicitudRechazada
+import com.example.primeraclaseprogramacionmobile.data.remoto.ServicioNoDisponible
 
 class RepositorioLocal(
+    private val uid: String,
     private val base: BaseRecordatorios,
     private val config: PreferenciasLocales,
     private val servicio: ServicioRecordatorios,
@@ -35,31 +37,32 @@ class RepositorioLocal(
     override suspend fun ordenar(orden: Orden) = config.cambiarOrden(orden)
 
     init {
+        require(uid.isNotBlank())
         alcance.launch { for (solicitud in solicitudes) sincronizar() }
     }
 
     override fun solicitarSincronizacion() { solicitudes.trySend(Unit) }
 
     override fun registros(estado: EstadoRecordatorio?): Flow<List<Recordatorio>> {
-        val filas = if (estado == null) dao.todos() else dao.porEstado(estado.clave)
+        val filas = if (estado == null) dao.todos(uid) else dao.porEstado(uid, estado.clave)
         return filas.map { datos -> datos.map { it.dominio() } }
     }
 
-    override fun observar(id: Long) = dao.observar(id).map { it?.dominio() }
+    override fun observar(id: Long) = dao.observar(uid, id).map { it?.dominio() }
 
     override suspend fun guardar(borrador: Borrador) = escribir {
         val id = (UUID.randomUUID().mostSignificantBits and Long.MAX_VALUE).coerceAtLeast(1L)
-        dao.insertar(borrador.recordatorio(id).copy(fecha = System.currentTimeMillis()).fila())
+        dao.insertar(borrador.recordatorio(id).copy(fecha = System.currentTimeMillis()).fila(uid))
     }
 
     override suspend fun modificar(id: Long, borrador: Borrador, estado: EstadoRecordatorio) = escribir {
-        val anterior = dao.buscar(id)?.takeUnless { it.borrado } ?: throw IOException("El registro ya no existe")
+        val anterior = dao.buscar(uid, id)?.takeUnless { it.borrado } ?: throw IOException("El registro ya no existe")
         val nuevo = borrador.recordatorio(id).copy(estado = estado, fecha = anterior.fecha)
-        dao.actualizar(nuevo.fila(anterior.revision + 1))
+        dao.actualizar(nuevo.fila(uid, anterior.revision + 1))
     }
 
     override suspend fun eliminar(id: Long) = escribir {
-        val anterior = dao.buscar(id) ?: return@escribir
+        val anterior = dao.buscar(uid, id) ?: return@escribir
         dao.actualizar(anterior.copy(pendiente = true, borrado = true, revision = anterior.revision + 1))
     }
 
@@ -80,30 +83,30 @@ class RepositorioLocal(
         estadoRed.value = Sincronizacion.EnCurso
         estadoRed.value = try {
             var rechazado = false
-            for (fila in dao.pendientes()) {
+            for (fila in dao.pendientes(uid)) {
                 try {
                     enviar(fila)
-                } catch (e: HttpException) {
-                    // Una fila rechazada no impide enviar las demás.
-                    if (e.code() !in 400..499) throw e
+                } catch (_: SolicitudRechazada) {
                     rechazado = true
                 }
             }
-            val recibidos = servicio.listar().cuerpo().map { it.fila() }
+            val recibidos = servicio.listar().map { it.fila(uid) }
             require(recibidos.distinctBy { it.id }.size == recibidos.size)
             base.withTransaction {
                 for (fila in recibidos) {
-                    val local = dao.buscar(fila.id)
+                    val local = dao.buscar(uid, fila.id)
                     if (local == null) dao.insertar(fila)
                     else if (!local.pendiente) dao.actualizar(fila.copy(revision = local.revision))
                 }
-                // GET devuelve la colección completa. Una ausencia confirma una baja remota.
+                // La consulta remota devuelve la colección completa. Una ausencia confirma una baja remota.
                 val remotos = recibidos.mapTo(hashSetOf()) { it.id }
-                dao.confirmados().filter { it.id !in remotos }.forEach { dao.eliminar(it) }
+                dao.confirmados(uid).filter { it.id !in remotos }.forEach { dao.eliminar(it) }
             }
             if (rechazado) Sincronizacion.SolicitudInvalida else Sincronizacion.AlDia
-        } catch (e: HttpException) {
-            if (e.code() in 400..499) Sincronizacion.SolicitudInvalida else Sincronizacion.ErrorServidor
+        } catch (_: SolicitudRechazada) {
+            Sincronizacion.SolicitudInvalida
+        } catch (_: ServicioNoDisponible) {
+            Sincronizacion.ErrorServidor
         } catch (_: InterruptedIOException) {
             Sincronizacion.TiempoAgotado
         } catch (_: IOException) {
@@ -119,22 +122,16 @@ class RepositorioLocal(
 
     private suspend fun enviar(fila: FilaRecordatorio) {
         if (fila.borrado) {
-            val respuesta = servicio.eliminar(fila.id)
-            if (!respuesta.isSuccessful && respuesta.code() != 404) throw HttpException(respuesta)
-            dao.confirmarBaja(fila.id, fila.revision)
+            servicio.eliminar(fila.id)
+            dao.confirmarBaja(uid, fila.id, fila.revision)
         } else {
-            val confirmado = servicio.guardar(fila.id, fila.dto()).cuerpo().fila()
+            val confirmado = servicio.guardar(fila.id, fila.dto()).fila(uid)
             require(confirmado.id == fila.id)
-            // Una edición local durante el PUT debe permanecer pendiente.
+            // Una edición local durante el envío debe permanecer pendiente.
             base.withTransaction {
-                val actual = dao.buscar(fila.id)
+                val actual = dao.buscar(uid, fila.id)
                 if (actual?.revision == fila.revision) dao.actualizar(confirmado.copy(revision = fila.revision))
             }
         }
     }
-}
-
-private fun <T> retrofit2.Response<T>.cuerpo(): T {
-    if (!isSuccessful) throw HttpException(this)
-    return requireNotNull(body()) { "La respuesta no contiene los datos solicitados" }
 }

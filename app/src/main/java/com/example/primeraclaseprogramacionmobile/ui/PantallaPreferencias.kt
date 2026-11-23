@@ -18,7 +18,7 @@ import com.example.primeraclaseprogramacionmobile.data.local.*
 
 @Composable
 fun PantallaPreferencias(p: Preferencias, error: Boolean, tema: (Boolean) -> Unit,
-    completados: (Boolean) -> Unit, orden: (Orden) -> Unit, volver: () -> Unit) {
+    completados: (Boolean) -> Unit, orden: (Orden) -> Unit, volver: () -> Unit, correo: String, cerrarSesion: () -> Unit) {
     Scaffold(topBar = { BarraPantalla(stringResource(R.string.settings), onVolver = volver) }) { margen ->
         Column(Modifier.padding(margen).verticalScroll(rememberScrollState()).padding(20.dp)) {
             Interruptor(R.string.light_theme, p.claro, tema)
@@ -39,6 +39,9 @@ fun PantallaPreferencias(p: Preferencias, error: Boolean, tema: (Boolean) -> Uni
                     }
                 }
             }
+            HorizontalDivider(Modifier.padding(vertical = 16.dp))
+            Text(correo, style = MaterialTheme.typography.bodyMedium)
+            TextButton(onClick = cerrarSesion) { Text(stringResource(R.string.auth_logout)) }
             if (error) Text(stringResource(R.string.settings_error), color = MaterialTheme.colorScheme.error)
         }
     }
